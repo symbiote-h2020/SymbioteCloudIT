@@ -1,3 +1,14 @@
-[![Build Status](https://api.travis-ci.org/symbiote-h2020/SymbioteCloudID.svg?branch=staging)](https://api.travis-ci.org/symbiote-h2020/SymbioteCloudID)
-[![codecov.io](https://codecov.io/github/symbiote-h2020/SymbioteCloudID/branch/master/graph/badge.svg)](https://codecov.io/github/symbiote-h2020/SymbioteCloudID/branch/develop)
+This is the repository with integartion tests for SymbIoTe Cloud.
+
+It tests:
+- getting guest token from core
+- registering/unregistering/updating default (dummy) resources in RAP
+- accessing default (dummy) resources in the RAP
+
+If you want to test it in your platfrom you have to do following:
+- in `src/test/resources/application.properties` change:
+    - core parameters (now it is using open environment: `https://symbiote-open.man.poznan.pl`)
+    - cloud parameters to your platform parameters
+- in getting configuration of your platfrom ((documentation)[https://github.com/symbiote-h2020/SymbioteCloud/wiki/1.1-Register-user-and-configure-platform-in-symbIoTe-Core#113-getting-all-configuration-files-in-one-zip-optional]) choose that you want to use build in plig-in provided by rap.
+- run unit tests in this rpository
 
