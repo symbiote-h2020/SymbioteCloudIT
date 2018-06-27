@@ -1,11 +1,9 @@
-package eu.h2020.symbiote.client;
+package eu.h2020.symbiote.client.l1;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import eu.h2020.symbiote.client.ClientFixture;
+import eu.h2020.symbiote.client.SymbioteCloudITApplication;
+import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
+import eu.h2020.symbiote.model.cim.Observation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,8 +15,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
-import eu.h2020.symbiote.model.cim.Observation;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -31,18 +32,18 @@ public class RAP_IntegrationTests extends ClientFixture {
 	public void setUp() throws Exception {
 		log.info("JUnit: setup START {}", new RuntimeException().getStackTrace()[0]);
 		clearRegistrationHandler();
-		registerDefaultResources();
+		registerDefaultL1Resources();
 		log.info("JUnit: setup END {}", new RuntimeException().getStackTrace()[0]);
-        TimeUnit.SECONDS.sleep(2);
+        TimeUnit.SECONDS.sleep(3);
     }
 
 	@After
-	public void cleanUp() throws Exception {
+	public void cleanUp() {
 		clearRegistrationHandler();
 	}
 
 	@Test
-	public void testGetSensorObservation() throws Exception {
+	public void testGetSensorObservation() {
 		// GET https://3ef144e8.ngrok.io/rap/Sensors('5ab412f14a234e0f916be9bf')/Observations?$top=1
 		String resourceId = findDefaultSensor().getId();
 		String url = getResourceUrl(resourceId) + "/Observations?$top=1";//, StandardCharsets.US_ASCII.name());
@@ -56,7 +57,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 	}
 
 	@Test
-	public void testGetSensorObservations2() throws Exception {
+	public void testGetSensorObservations2() {
 		// GET https://3ef144e8.ngrok.io/rap/Sensors('5ab412f14a234e0f916be9bf')/Observations?$top=2
 		String resourceId = findDefaultSensor().getId();
 		String url = getResourceUrl(resourceId) + "/Observations?$top=2";//, StandardCharsets.US_ASCII.name());
@@ -69,7 +70,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 	}
 
 	@Test
-	public void testGetSensorObservations100() throws Exception {
+	public void testGetSensorObservations100() {
 		// GET https://3ef144e8.ngrok.io/rap/Sensors('5ab412f14a234e0f916be9bf')/Observations?$top=100
 		String resourceId = findDefaultSensor().getId();
 		String url = getResourceUrl(resourceId) + "/Observations?$top=100";
@@ -82,7 +83,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 	}
 	
 	@Test
-	public void testActuate() throws Exception {
+	public void testActuate() {
 		// PUT https://2a5235cd.ngrok.io/rap/Actuators('5ac6528f4a234e63b247fec6')
 		// Body:
 		//		{
@@ -109,7 +110,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 	}
 
 	@Test
-	public void testInvokeService() throws Exception {
+	public void testInvokeService() {
 		// PUT  https://1b38d90c.ngrok.io/rap/Services('5ab5db974a234e717380721f')
 		//		[
 		//		  {

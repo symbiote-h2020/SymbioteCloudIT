@@ -1,9 +1,9 @@
 package eu.h2020.symbiote.client;
 
-import java.util.function.Predicate;
-
 import org.assertj.core.api.Condition;
 import org.assertj.core.description.Description;
+
+import java.util.function.Predicate;
 
 public class LambdaCondition<T> extends Condition<T> {
 

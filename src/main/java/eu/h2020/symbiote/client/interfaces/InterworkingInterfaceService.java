@@ -4,11 +4,9 @@ import eu.h2020.symbiote.core.cci.RDFResourceRegistryRequest;
 import eu.h2020.symbiote.core.cci.ResourceRegistryRequest;
 import eu.h2020.symbiote.core.cci.ResourceRegistryResponse;
 import eu.h2020.symbiote.core.internal.ClearDataResponse;
-
 import feign.Headers;
 import feign.Param;
 import feign.RequestLine;
-
 import org.springframework.web.bind.annotation.RequestBody;
 
 public interface InterworkingInterfaceService {

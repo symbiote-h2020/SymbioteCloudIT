@@ -1,42 +1,7 @@
 package eu.h2020.symbiote.client;
 
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.h2020.symbiote.client.model.SparqlQueryRequestWrapper;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
@@ -54,13 +19,31 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerExcep
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import eu.h2020.symbiote.security.communication.AAMClient;
 import eu.h2020.symbiote.security.communication.IAAMClient;
-import eu.h2020.symbiote.security.communication.payloads.AAM;
-import eu.h2020.symbiote.security.communication.payloads.Credentials;
-import eu.h2020.symbiote.security.communication.payloads.SecurityRequest;
-import eu.h2020.symbiote.security.communication.payloads.UserDetails;
-import eu.h2020.symbiote.security.communication.payloads.UserManagementRequest;
+import eu.h2020.symbiote.security.communication.payloads.*;
 import eu.h2020.symbiote.security.handler.ISecurityHandler;
 import eu.h2020.symbiote.security.helpers.MutualAuthenticationHelper;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestTemplate;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.*;
 
 /**
  * @author Vasileios Glykantzis (ICOM)

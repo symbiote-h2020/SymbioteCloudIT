@@ -1,48 +1,34 @@
 package eu.h2020.symbiote.client;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
-
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.model.cim.Actuator;
-import eu.h2020.symbiote.model.cim.FeatureOfInterest;
-import eu.h2020.symbiote.model.cim.LengthRestriction;
-import eu.h2020.symbiote.model.cim.PrimitiveDatatype;
-import eu.h2020.symbiote.model.cim.Service;
-import eu.h2020.symbiote.model.cim.StationarySensor;
-import eu.h2020.symbiote.model.cim.WGS84Location;
+import eu.h2020.symbiote.model.cim.*;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ClientFixture {
 
 	@Autowired
-	SymbioteClient client;
+	protected SymbioteClient client;
 	
 	@Autowired
-	RestTemplate restTemplate;
+	protected RestTemplate restTemplate;
 
 	@Value("${test.platformId}")
-	String platformId; 
+	protected String platformId;
 	
 	@Value("${test.directAAMUrl}")
-	String directAAMUrl;
+	protected String directAAMUrl;
 
 	@Value("${test.rhUrl}")
 	String rhUrl;
@@ -68,9 +54,9 @@ public class ClientFixture {
 	@Value("${symbIoTeCoreUrl}")
 	String symbIoTeCoreUrl;
 	
-	String defaultResourceIdPrefix;
+	protected String defaultResourceIdPrefix;
 	
-	protected void clearRegistrationHandler() throws Exception {
+	protected void clearRegistrationHandler() {
 //		try {
 //			syncResources();
 //		} catch (Exception e) {
@@ -83,7 +69,8 @@ public class ClientFixture {
 //			// this can be ignored because sync sometimes returns 400 first time it is called
 //		}
 
-		deleteAllResources();
+        deleteAllL1Resources();
+        deleteAllL2Resources();
 	}
 
 	protected CloudResource createSensorResource(String timeStamp, String internalId) {
@@ -101,12 +88,12 @@ public class ClientFixture {
 	    StationarySensor sensor = new StationarySensor();
 	    cloudResource.setResource(sensor);
 	    sensor.setName(getSensorName(timeStamp + internalId));
-	    sensor.setDescription(Arrays.asList("This is default sensor with timestamp: " + timeStamp + " and iid: " + internalId));
+	    sensor.setDescription(Collections.singletonList("This is default sensor with timestamp: " + timeStamp + " and iid: " + internalId));
 	
 	    FeatureOfInterest featureOfInterest = new FeatureOfInterest();
 	    sensor.setFeatureOfInterest(featureOfInterest);
 	    featureOfInterest.setName("outside air");
-	    featureOfInterest.setDescription(Arrays.asList("outside air quality"));
+	    featureOfInterest.setDescription(Collections.singletonList("outside air quality"));
 	    featureOfInterest.setHasProperty(Arrays.asList("temperature,humidity".split(",")));
 	    
 	    sensor.setObservesProperty(Arrays.asList("temperature,humidity".split(",")));
@@ -116,10 +103,9 @@ public class ClientFixture {
 	}
 
 	private WGS84Location createLocation() {
-		WGS84Location location = new WGS84Location(52.513681, 13.363782, 15, 
-	            "Berlin", 
-	            Arrays.asList("Grosser Tiergarten"));
-		return location;
+		return new WGS84Location(52.513681, 13.363782, 15,
+	            "Berlin",
+                Collections.singletonList("Grosser Tiergarten"));
 	}
 
 	protected CloudResource createActuatorResource(String timestamp, String internalId) {
@@ -139,16 +125,16 @@ public class ClientFixture {
 	    
 	    actuator.setLocatedAt(createLocation());
 	    actuator.setName(getActuatorName(timestamp + internalId));
-	    actuator.setDescription(Arrays.asList("This default actuator with timestamp: " + timestamp + " and iid: " + internalId));
+	    actuator.setDescription(Collections.singletonList("This default actuator with timestamp: " + timestamp + " and iid: " + internalId));
 	    
 	    eu.h2020.symbiote.model.cim.Capability capability = new eu.h2020.symbiote.model.cim.Capability();
-	    actuator.setCapabilities(Arrays.asList(capability));
+	    actuator.setCapabilities(Collections.singletonList(capability));
 	    
 	    capability.setName("OnOffCapabililty");
 	
 	    // parameters
 	    eu.h2020.symbiote.model.cim.Parameter parameter = new eu.h2020.symbiote.model.cim.Parameter();
-	    capability.setParameters(Arrays.asList(parameter));
+	    capability.setParameters(Collections.singletonList(parameter));
 	    parameter.setName("on");
 	    parameter.setMandatory(true);
 	    PrimitiveDatatype datatype = new PrimitiveDatatype();
@@ -176,10 +162,10 @@ public class ClientFixture {
 	    cloudResource.setResource(service);
 	    
 	    service.setName(getServiceName(timestamp + internalId));
-	    service.setDescription(Arrays.asList("Defaut Service for testing with timestamp: " + timestamp + " and iid: " + internalId));
+	    service.setDescription(Collections.singletonList("Defaut Service for testing with timestamp: " + timestamp + " and iid: " + internalId));
 	    
 	    eu.h2020.symbiote.model.cim.Parameter parameter = new eu.h2020.symbiote.model.cim.Parameter();
-	    service.setParameters(Arrays.asList(parameter));
+	    service.setParameters(Collections.singletonList(parameter));
 	
 	    parameter.setName("inputParam1");
 	    parameter.setMandatory(true);
@@ -187,7 +173,7 @@ public class ClientFixture {
 	    LengthRestriction restriction = new LengthRestriction();
 	    restriction.setMin(2);
 	    restriction.setMax(10);
-		parameter.setRestrictions(Arrays.asList(restriction));
+		parameter.setRestrictions(Collections.singletonList(restriction));
 		
 		PrimitiveDatatype datatype = new PrimitiveDatatype();
 		datatype.setArray(false);
@@ -199,59 +185,112 @@ public class ClientFixture {
 	    return cloudResource;
 	}
 
-	protected ResponseEntity<ArrayList<CloudResource>> registerResources(List<CloudResource> resources) {
-		// POST localhost:8001/resources
-		// Headers: content-type: application/json
-		// body array of cloud resources
-		
-	    HttpHeaders httpHeaders = new HttpHeaders();
-	    httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-	    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-	
-	    HttpEntity<List<CloudResource>> requestEntity = new HttpEntity<>(resources, httpHeaders);
-		ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = restTemplate.exchange(rhUrl + "/resources", HttpMethod.POST, requestEntity, type);
-	
-		return responseEntity;
-	}
+    protected ResponseEntity<ArrayList<CloudResource>> getResources() {
+        HttpEntity requestEntity = new HttpEntity<>(null);
+        ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
+        return restTemplate.exchange(
+                rhUrl + "/resources", HttpMethod.GET, requestEntity, type);
+    }
 
-	protected ResponseEntity<ArrayList<CloudResource>> getResources() {
-		HttpEntity requestEntity = new HttpEntity<>(null);
-		ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = restTemplate.exchange(rhUrl + "/resources", HttpMethod.GET, requestEntity, type);
-	
-		return responseEntity;
-	}
+    protected ResponseEntity<ArrayList<CloudResource>> registerL1Resources(List<CloudResource> resources) {
+	    return registerResources(resources, Layer.L1);
+    }
 
-	protected ResponseEntity<ArrayList<CloudResource>> deleteAllResources() {
+    protected ResponseEntity<ArrayList<CloudResource>> registerL2Resources(List<CloudResource> resources) {
+        return registerResources(resources, Layer.L2);
+    }
+
+
+    protected ResponseEntity<ArrayList<CloudResource>> deleteAllL1Resources() {
+        return deleteAllResources(Layer.L1);
+    }
+
+    protected ResponseEntity<ArrayList<CloudResource>> deleteAllL2Resources() {
+        return deleteAllResources(Layer.L2);
+    }
+
+    protected ResponseEntity<ArrayList<CloudResource>> registerDefaultL1Resources() {
+        return registerDefaultResources(Layer.L1);
+    }
+
+    protected ResponseEntity<ArrayList<CloudResource>> registerDefaultL2Resources() {
+        return registerDefaultResources(Layer.L2);
+    }
+
+    protected ResponseEntity<ArrayList<CloudResource>> syncResources() {
+        // PUT symbiotedoc.tel.fer.hr:8001/sync
+        HttpEntity requestEntity = new HttpEntity<>(null);
+        ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
+        return restTemplate.exchange(rhUrl + "/sync", HttpMethod.PUT, requestEntity, type);
+    }
+
+    protected LinkedList<CloudResource> createDefaultResources() {
+        return createDefaultResourceWithIdPrefix("");
+    }
+
+    protected QueryResourceResult findDefaultSensor() {
+        return searchResourceByName(getDefaultSensorName());
+    }
+
+    protected QueryResourceResult findDefaultActuator() {
+        return searchResourceByName(getDefaultActuatorName());
+    }
+
+    protected QueryResourceResult findDefaultService() {
+        return searchResourceByName(getDefaultServiceName());
+    }
+
+    protected String getDefaultSensorName() {
+        return getSensorName(defaultResourceIdPrefix + "-isen1");
+    }
+
+    protected String getDefaultActuatorName() {
+        return getActuatorName(defaultResourceIdPrefix + "-iaid1");
+    }
+
+    protected String getDefaultServiceName() {
+        return getServiceName(defaultResourceIdPrefix + "-isrid1");
+    }
+
+    private ResponseEntity<ArrayList<CloudResource>> registerResources(List<CloudResource> resources, Layer layer) {
+        // POST localhost:8001/resources
+        // Headers: content-type: application/json
+        // body array of cloud resources
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<List<CloudResource>> requestEntity = new HttpEntity<>(resources, httpHeaders);
+        ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
+        return restTemplate.exchange(rhUrl + (layer == Layer.L2 ? "/local" : "") + "/resources", HttpMethod.POST, requestEntity, type);
+    }
+
+	private ResponseEntity<ArrayList<CloudResource>> deleteAllResources(Layer layer) {
 		// DELETE localhost:8001/resources?resourceInternalIds=el_isen1,el_iaid1
 		String ids = getResources().getBody().stream()
-			.map(r -> r.getInternalId())
+			.map(CloudResource::getInternalId)
 			.collect(Collectors.joining(","));
-		
+
+		if (ids.isEmpty())
+		    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
 		HttpEntity requestEntity = new HttpEntity<>(null);
 		ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = restTemplate.exchange(rhUrl + "/resources?resourceInternalIds=" + ids, HttpMethod.DELETE, requestEntity, type);
-	
-		return responseEntity;
-		
+
+		return restTemplate.exchange(
+		        rhUrl+ (layer == Layer.L2 ? "/local/resources?resourceIds=" : "/resources?resourceInternalIds=") + ids,
+                HttpMethod.DELETE, requestEntity, type);
 	}
 
-	protected ResponseEntity<ArrayList<CloudResource>> syncResources() {
-		// PUT symbiotedoc.tel.fer.hr:8001/sync
-		HttpEntity requestEntity = new HttpEntity<>(null);
-		ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = restTemplate.exchange(rhUrl + "/sync", HttpMethod.PUT, requestEntity, type);
-	
-		return responseEntity;
-	}
+    private ResponseEntity<ArrayList<CloudResource>> registerDefaultResources(Layer layer) {
+        defaultResourceIdPrefix = String.valueOf(System.currentTimeMillis());
+        LinkedList<CloudResource> resources = createDefaultResourceWithIdPrefix(defaultResourceIdPrefix);
 
-	protected LinkedList<CloudResource> createDefaultResources() {
-		LinkedList<CloudResource> resources = createDefaultResourceWithIdPrefix("");
-		return resources;
-	}
+        return registerResources(resources, layer);
+    }
 
-	LinkedList<CloudResource> createDefaultResourceWithIdPrefix(String prefix) {
+	private LinkedList<CloudResource> createDefaultResourceWithIdPrefix(String prefix) {
 		if(!prefix.isEmpty())
 			prefix = prefix + "-";
 		LinkedList<CloudResource> resources = new LinkedList<>();
@@ -261,48 +300,16 @@ public class ClientFixture {
 		return resources;
 	}
 
-	protected ResponseEntity<ArrayList<CloudResource>> registerDefaultResources() {
-		defaultResourceIdPrefix = String.valueOf(System.currentTimeMillis());
-		LinkedList<CloudResource> resources = createDefaultResourceWithIdPrefix(defaultResourceIdPrefix);
-		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerResources(resources);
-		return responseEntity;
-	}
-
-	String getSensorName(String internalId) {
+	private String getSensorName(String internalId) {
 		return "DefaultSensor" + internalId;
 	}
-	
-	String getActuatorName(String internalId) {
+
+    private String getActuatorName(String internalId) {
 		return "DefaultActuator" + internalId;
 	}
 
-	String getServiceName(String internalId) {
+    private String getServiceName(String internalId) {
 		return "DefaultService" + internalId;
-	}
-
-	String getDefaultSensorName() {
-		return getSensorName(defaultResourceIdPrefix + "-isen1");
-	}
-	
-	String getDefaultActuatorName() {
-		return getActuatorName(defaultResourceIdPrefix + "-iaid1");
-	}
-
-	String getDefaultServiceName() {
-		return getServiceName(defaultResourceIdPrefix + "-isrid1");
-	}
-
-	protected QueryResourceResult findDefaultSensor() {
-		return searchResourceByName(getDefaultSensorName());
-	}
-
-	protected QueryResourceResult findDefaultActuator() {
-		return searchResourceByName(getDefaultActuatorName());
-	}
-
-	protected QueryResourceResult findDefaultService() {
-		return searchResourceByName(getDefaultServiceName());
 	}
 
 	private QueryResourceResult searchResourceByName(String name) {
@@ -324,5 +331,9 @@ public class ClientFixture {
 	    );
 		return query.getBody().getBody().get(0);
 	}
+
+	private enum Layer {
+	    L1, L2;
+    }
 }
 

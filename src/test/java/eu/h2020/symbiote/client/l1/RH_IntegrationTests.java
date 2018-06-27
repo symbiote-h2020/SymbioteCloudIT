@@ -1,10 +1,8 @@
-package eu.h2020.symbiote.client;
+package eu.h2020.symbiote.client.l1;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-
+import eu.h2020.symbiote.client.ClientFixture;
+import eu.h2020.symbiote.client.SymbioteCloudITApplication;
+import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -18,7 +16,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import java.util.ArrayList;
+import java.util.LinkedList;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -28,14 +29,14 @@ public class RH_IntegrationTests extends ClientFixture {
 	private static Logger log = LoggerFactory.getLogger(RH_IntegrationTests.class);
 	
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		log.info("JUnit: setup START");
 		clearRegistrationHandler();
 		log.info("JUnit: setup END");
 	}
 
 	@After
-	public void cleanUp() throws Exception {
+	public void cleanUp() {
 		clearRegistrationHandler();
 	}
 
@@ -57,7 +58,8 @@ public class RH_IntegrationTests extends ClientFixture {
 	@Test
 	public void testDeleteAllRegisteredResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = deleteAllResources();
+        registerDefaultL1Resources();
+        ResponseEntity<ArrayList<CloudResource>> responseEntity = deleteAllL1Resources();
 		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
@@ -80,7 +82,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultSensorResource = createSensorResource("", "isen1");
 		resources.add(defaultSensorResource);
 		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerResources(resources);
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL1Resources(resources);
 		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(responseEntity.getBody()).hasSize(1);
 		
@@ -98,7 +100,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultActuatorResource = createActuatorResource("", "iaid1");
 		resources.add(defaultActuatorResource);
 		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerResources(resources);
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL1Resources(resources);
 		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(responseEntity.getBody()).hasSize(1);
 		
@@ -116,7 +118,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultServiceResource = createActuatorResource("", "isrid1");
 		resources.add(defaultServiceResource);
 		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerResources(resources);
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL1Resources(resources);
 		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(responseEntity.getBody()).hasSize(1);
 		
@@ -129,7 +131,7 @@ public class RH_IntegrationTests extends ClientFixture {
 	@Test
 	public void testRegisterListOfResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerDefaultResources();
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerDefaultL1Resources();
 		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(responseEntity.getBody()).hasSize(3);
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);

@@ -1,12 +1,10 @@
-package eu.h2020.symbiote.client;
+package eu.h2020.symbiote.client.l1;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import eu.h2020.symbiote.client.ClientFixture;
+import eu.h2020.symbiote.client.LambdaCondition;
+import eu.h2020.symbiote.client.SymbioteCloudITApplication;
+import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,9 +16,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import eu.h2020.symbiote.core.ci.QueryResourceResult;
-import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -33,18 +34,18 @@ public class Core_IntegrationTests extends ClientFixture {
 	public void setUp() throws Exception {
 		log.info("JUnit: setup START {}", new RuntimeException().getStackTrace()[0]);
 		clearRegistrationHandler();
-		registerDefaultResources();
+		registerDefaultL1Resources();
 		log.info("JUnit: setup END {}", new RuntimeException().getStackTrace()[0]);
-        TimeUnit.SECONDS.sleep(2);
+        TimeUnit.SECONDS.sleep(3);
     }
 
 	@After
-	public void cleanUp() throws Exception {
+	public void cleanUp() {
 		clearRegistrationHandler();
 	}
 
 	@Test
-	public void testSearch() throws Exception {
+	public void testSearch() {
 		// GET http://localhost:8777/query?homePlatformId=xplatform&platform_id=xplatform
         ResponseEntity<QueryResponse> query = client.query(platformId, // platformId,
 	    		null, // platformName, 
@@ -65,7 +66,7 @@ public class Core_IntegrationTests extends ClientFixture {
 	    
 	    assertThat(query.getStatusCodeValue()).isEqualTo(200);
 	    assertThat(query.getBody().getBody())
-	    	.filteredOn(new LambdaCondition<QueryResourceResult>(
+	    	.filteredOn(new LambdaCondition<>(
 	    		r -> r.getName().contains(defaultResourceIdPrefix)
 			))
 	    	.extracting("name")
@@ -103,14 +104,14 @@ public class Core_IntegrationTests extends ClientFixture {
 		assertUrlPath(response, resourceId, "/rap/Services('" + resourceId + "')");
 	}
 	
-	void assertUrlPath(ResponseEntity<ResourceUrlsResponse> response, String resourceId, String expectedPath)
+	private void assertUrlPath(ResponseEntity<ResourceUrlsResponse> response, String resourceId, String expectedPath)
 			throws MalformedURLException {
 		Map<String, String> map = response.getBody().getBody();
 		URL url = new URL(map.get(resourceId));
 		assertThat(url.getPath()).isEqualTo(expectedPath);
 	}
 
-	void assertUrlExists(ResponseEntity<ResourceUrlsResponse> response, String resourceId) {
+	private void assertUrlExists(ResponseEntity<ResourceUrlsResponse> response, String resourceId) {
 		assertThat(response.getStatusCodeValue()).isEqualTo(200);
 		Map<String, String> map = response.getBody().getBody();
 		assertThat(map)

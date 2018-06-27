@@ -1,10 +1,5 @@
 package eu.h2020.symbiote.client;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-import java.util.Map.Entry;
-
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +8,11 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.Map.Entry;
 
 @Component
 public class LoggingInterceptor implements ClientHttpRequestInterceptor {
