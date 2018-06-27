@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -32,6 +34,11 @@ public class RH_IntegrationTests extends ClientFixture {
 		log.info("JUnit: setup END");
 	}
 
+	@After
+	public void cleanUp() throws Exception {
+		clearRegistrationHandler();
+	}
+
 	@Test
 	public void testCreatingUser() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
@@ -55,6 +62,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 
+	@Ignore
 	@Test
 	public void testSyncResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);

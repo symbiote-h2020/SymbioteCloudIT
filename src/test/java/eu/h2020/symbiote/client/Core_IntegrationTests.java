@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,13 +35,18 @@ public class Core_IntegrationTests extends ClientFixture {
 		clearRegistrationHandler();
 		registerDefaultResources();
 		log.info("JUnit: setup END {}", new RuntimeException().getStackTrace()[0]);
+        TimeUnit.SECONDS.sleep(2);
+    }
+
+	@After
+	public void cleanUp() throws Exception {
+		clearRegistrationHandler();
 	}
 
 	@Test
-	public void testSearch() {
+	public void testSearch() throws Exception {
 		// GET http://localhost:8777/query?homePlatformId=xplatform&platform_id=xplatform
-			
-	    ResponseEntity<QueryResponse> query = client.query(platformId, // platformId, 
+        ResponseEntity<QueryResponse> query = client.query(platformId, // platformId,
 	    		null, // platformName, 
 	    		null, // owner, 
 	    		null, // name, 
@@ -69,7 +76,7 @@ public class Core_IntegrationTests extends ClientFixture {
 	
 	@Test
 	public void testGetUrlForSensor() throws Exception {
-		// POST http://localhost:8777/get_resource_url?platformId=xplatform&resourceId=5ab412f14a234e0f916be9bf
+        // POST http://localhost:8777/get_resource_url?platformId=xplatform&resourceId=5ab412f14a234e0f916be9bf
 
 		String resourceId = findDefaultSensor().getId();
 		ResponseEntity<ResourceUrlsResponse> response = client.getResourceUrlFromCram(resourceId, platformId);
@@ -80,7 +87,7 @@ public class Core_IntegrationTests extends ClientFixture {
 
 	@Test
 	public void testGetUrlForActuator() throws Exception {
-		String resourceId = findDefaultActuator().getId();
+        String resourceId = findDefaultActuator().getId();
 		ResponseEntity<ResourceUrlsResponse> response = client.getResourceUrlFromCram(resourceId, platformId);
 		
 		assertUrlExists(response, resourceId);

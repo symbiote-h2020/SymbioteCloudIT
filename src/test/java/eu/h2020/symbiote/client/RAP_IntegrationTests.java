@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +33,12 @@ public class RAP_IntegrationTests extends ClientFixture {
 		clearRegistrationHandler();
 		registerDefaultResources();
 		log.info("JUnit: setup END {}", new RuntimeException().getStackTrace()[0]);
+        TimeUnit.SECONDS.sleep(2);
+    }
+
+	@After
+	public void cleanUp() throws Exception {
+		clearRegistrationHandler();
 	}
 
 	@Test

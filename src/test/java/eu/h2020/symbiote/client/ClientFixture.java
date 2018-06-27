@@ -71,12 +71,18 @@ public class ClientFixture {
 	String defaultResourceIdPrefix;
 	
 	protected void clearRegistrationHandler() throws Exception {
-		try {
-			syncResources();
-		} catch (Exception e) {
-			// this can be ignored because sync sometimes returns 400 first time it is called
-		}
-		syncResources();
+//		try {
+//			syncResources();
+//		} catch (Exception e) {
+//			// this can be ignored because sync sometimes returns 400 first time it is called
+//		}
+//
+//		try {
+//			syncResources();
+//		} catch (Exception e) {
+//			// this can be ignored because sync sometimes returns 400 first time it is called
+//		}
+
 		deleteAllResources();
 	}
 
