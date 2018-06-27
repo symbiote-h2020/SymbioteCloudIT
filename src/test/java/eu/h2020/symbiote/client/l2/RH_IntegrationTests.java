@@ -1,11 +1,10 @@
-package eu.h2020.symbiote.client.l1;
+package eu.h2020.symbiote.client.l2;
 
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -18,8 +17,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -31,47 +32,29 @@ public class RH_IntegrationTests extends ClientFixture {
 	@Before
 	public void setUp() {
 		log.info("JUnit: setup START");
-        clearRegistrationHandlerL1();
+        clearRegistrationHandlerL2();
 		log.info("JUnit: setup END");
 	}
 
 	@After
 	public void cleanUp() {
-        clearRegistrationHandlerL1();
-	}
-
-	@Test
-	public void testCreatingUser() {
-		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-		client.registerToPAAM(platformId, directAAMUrl);
-		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
+        clearRegistrationHandlerL2();
 	}
 
 	@Test
 	public void testGetAllRegisteredResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 		ResponseEntity<ArrayList<CloudResource>> responseEntity = getResources();
-		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 
 	@Test
 	public void testDeleteAllRegisteredResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-        registerDefaultL1Resources();
-        ResponseEntity<ArrayList<CloudResource>> responseEntity = deleteAllL1Resources();
-		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
-	}
-
-	@Ignore
-	@Test
-	public void testSyncResources() {
-		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-		
-		syncResources();
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = syncResources();
-		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        registerDefaultL2Resources();
+        ResponseEntity<List<String>> responseEntity = deleteAllL2Resources();
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 	
@@ -82,13 +65,14 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultSensorResource = createSensorResource("", "isen1");
 		resources.add(defaultSensorResource);
 		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL1Resources(resources);
-		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(responseEntity.getBody()).hasSize(1);
-		
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(1, responseEntity.getBody().size());
+
 		CloudResource returnedResource = responseEntity.getBody().get(0);
-		assertThat(returnedResource.getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
-		assertThat(returnedResource.getResource().getId()).isNotNull();
+		assertEquals(defaultSensorResource.getInternalId(), returnedResource.getInternalId());
+        assertNotNull(returnedResource.getFederationInfo());
+        assertNotNull(returnedResource.getFederationInfo().getAggregationId());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 	
@@ -100,13 +84,14 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultActuatorResource = createActuatorResource("", "iaid1");
 		resources.add(defaultActuatorResource);
 		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL1Resources(resources);
-		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(responseEntity.getBody()).hasSize(1);
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(1, responseEntity.getBody().size());
 		
 		CloudResource returnedResource = responseEntity.getBody().get(0);
-		assertThat(returnedResource.getInternalId()).isEqualTo(defaultActuatorResource.getInternalId());
-		assertThat(returnedResource.getResource().getId()).isNotNull();
+        assertEquals(defaultActuatorResource.getInternalId(), returnedResource.getInternalId());
+        assertNotNull(returnedResource.getFederationInfo());
+        assertNotNull(returnedResource.getFederationInfo().getAggregationId());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 	
@@ -118,22 +103,23 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultServiceResource = createActuatorResource("", "isrid1");
 		resources.add(defaultServiceResource);
 		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL1Resources(resources);
-		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(responseEntity.getBody()).hasSize(1);
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(1, responseEntity.getBody().size());
 		
 		CloudResource returnedResource = responseEntity.getBody().get(0);
-		assertThat(returnedResource.getInternalId()).isEqualTo(defaultServiceResource.getInternalId());
-		assertThat(returnedResource.getResource().getId()).isNotNull();
+        assertEquals(defaultServiceResource.getInternalId(), returnedResource.getInternalId());
+        assertNotNull(returnedResource.getFederationInfo());
+        assertNotNull(returnedResource.getFederationInfo().getAggregationId());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 	
 	@Test
 	public void testRegisterListOfResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerDefaultL1Resources();
-		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(responseEntity.getBody()).hasSize(3);
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerDefaultL2Resources();
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(3, responseEntity.getBody().size());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 }

@@ -56,7 +56,7 @@ public class ClientFixture {
 	
 	protected String defaultResourceIdPrefix;
 	
-	protected void clearRegistrationHandler() {
+	protected void clearRegistrationHandlerL1() {
 //		try {
 //			syncResources();
 //		} catch (Exception e) {
@@ -70,8 +70,23 @@ public class ClientFixture {
 //		}
 
         deleteAllL1Resources();
-        deleteAllL2Resources();
 	}
+
+    protected void clearRegistrationHandlerL2() {
+//		try {
+//			syncResources();
+//		} catch (Exception e) {
+//			// this can be ignored because sync sometimes returns 400 first time it is called
+//		}
+//
+//		try {
+//			syncResources();
+//		} catch (Exception e) {
+//			// this can be ignored because sync sometimes returns 400 first time it is called
+//		}
+
+        deleteAllL2Resources();
+    }
 
 	protected CloudResource createSensorResource(String timeStamp, String internalId) {
 	    CloudResource cloudResource = new CloudResource();
@@ -205,7 +220,7 @@ public class ClientFixture {
         return deleteAllResources(Layer.L1);
     }
 
-    protected ResponseEntity<ArrayList<CloudResource>> deleteAllL2Resources() {
+    protected ResponseEntity deleteAllL2Resources() {
         return deleteAllResources(Layer.L2);
     }
 
@@ -266,7 +281,7 @@ public class ClientFixture {
         return restTemplate.exchange(rhUrl + (layer == Layer.L2 ? "/local" : "") + "/resources", HttpMethod.POST, requestEntity, type);
     }
 
-	private ResponseEntity<ArrayList<CloudResource>> deleteAllResources(Layer layer) {
+	private ResponseEntity deleteAllResources(Layer layer) {
 		// DELETE localhost:8001/resources?resourceInternalIds=el_isen1,el_iaid1
 		String ids = getResources().getBody().stream()
 			.map(CloudResource::getInternalId)
@@ -276,11 +291,22 @@ public class ClientFixture {
 		    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
 		HttpEntity requestEntity = new HttpEntity<>(null);
-		ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
 
-		return restTemplate.exchange(
-		        rhUrl+ (layer == Layer.L2 ? "/local/resources?resourceIds=" : "/resources?resourceInternalIds=") + ids,
-                HttpMethod.DELETE, requestEntity, type);
+		if (layer == Layer.L1) {
+            ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {
+            };
+
+            return restTemplate.exchange(
+                    rhUrl + "/resources?resourceInternalIds=" + ids,
+                    HttpMethod.DELETE, requestEntity, type);
+        } else {
+            ParameterizedTypeReference<ArrayList<String>> type = new ParameterizedTypeReference<ArrayList<String>>() {
+            };
+
+            return restTemplate.exchange(
+                    rhUrl + "/local/resources?resourceIds=" + ids,
+                    HttpMethod.DELETE, requestEntity, type);
+        }
 	}
 
     private ResponseEntity<ArrayList<CloudResource>> registerDefaultResources(Layer layer) {
@@ -329,7 +355,26 @@ public class ClientFixture {
 	    		null, // should_rank, 
 	    		platformId  // homePlatformId - can not be null
 	    );
-		return query.getBody().getBody().get(0);
+
+	    // If it is 0, ask one more time
+	    if (query.getBody().getResources().size() == 0)
+	        query = client.query(platformId, // platformId,
+                    null, // platformName,
+                    null, // owner,
+                    name, // name,
+                    null, // id,
+                    null, // description,
+                    null, // location_name,
+                    null, // location_lat,
+                    null, // location_long,
+                    null, // max_distance,
+                    null, // observed_property,
+                    null, // observed_property_iri,
+                    null, // resource_type,
+                    null, // should_rank,
+                    platformId  // homePlatformId - can not be null
+            );
+		return query.getBody().getResources().get(0);
 	}
 
 	private enum Layer {

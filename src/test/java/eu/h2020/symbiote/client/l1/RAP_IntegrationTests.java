@@ -31,7 +31,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 	@Before
 	public void setUp() throws Exception {
 		log.info("JUnit: setup START {}", new RuntimeException().getStackTrace()[0]);
-		clearRegistrationHandler();
+		clearRegistrationHandlerL1();
 		registerDefaultL1Resources();
 		log.info("JUnit: setup END {}", new RuntimeException().getStackTrace()[0]);
         TimeUnit.SECONDS.sleep(3);
@@ -39,7 +39,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 	@After
 	public void cleanUp() {
-		clearRegistrationHandler();
+		clearRegistrationHandlerL1();
 	}
 
 	@Test
