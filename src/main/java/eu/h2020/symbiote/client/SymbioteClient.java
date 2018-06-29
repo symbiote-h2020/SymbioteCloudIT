@@ -2,7 +2,10 @@ package eu.h2020.symbiote.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.querydsl.core.types.Predicate;
 import eu.h2020.symbiote.client.model.SparqlQueryRequestWrapper;
+import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import eu.h2020.symbiote.cloud.model.internal.FederationSearchResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
@@ -28,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.querydsl.binding.QuerydslPredicate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -54,7 +58,8 @@ public class SymbioteClient {
 
 	private static Log log = LogFactory.getLog(SymbioteClient.class);
 
-	private String symbIoTeCoreUrl;
+    private String symbIoTeCoreUrl;
+    private String homePlatformUrl;
 	private RestTemplate restTemplate;
 	private ISecurityHandler securityHandler;
 	private String username;
@@ -64,12 +69,14 @@ public class SymbioteClient {
 	private String paamOwnerPassword;
 
 	@Autowired
-	public SymbioteClient(@Qualifier("symbIoTeCoreUrl") String symbIoTeCoreUrl, RestTemplate restTemplate,
+	public SymbioteClient(
+	        @Qualifier("symbIoTeCoreUrl") String symbIoTeCoreUrl, RestTemplate restTemplate,
 			@Value("${coreAAMAddress}") String coreAAMAddress, @Value("${keystorePath}") String keystorePath,
 			@Value("${keystorePassword}") String keystorePassword, @Value("${userId}") String userId,
 			@Value("${demoApp.username}") String username, @Value("${demoApp.password}") String password,
 			@Value("${clientId}") String clientId, @Value("${paamOwner.username}") String paamOwnerUsername,
-			@Value("${paamOwner.password}") String paamOwnerPassword)
+			@Value("${paamOwner.password}") String paamOwnerPassword,
+            @Value("${test.iiUrl}") String homePlatformUrl)
 			throws SecurityHandlerException, NoSuchAlgorithmException {
 
 		Assert.notNull(symbIoTeCoreUrl, "symbIoTeCoreUrl can not be null!");
@@ -97,6 +104,9 @@ public class SymbioteClient {
 
 		Assert.notNull(paamOwnerPassword, "paamOwnerPassword can not be null!");
 		this.paamOwnerPassword = paamOwnerPassword;
+
+        Assert.notNull(homePlatformUrl, "homePlatformUrl can not be null!");
+        this.homePlatformUrl = homePlatformUrl;
 
 		TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
 			public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -201,6 +211,22 @@ public class SymbioteClient {
 
 		return sendRequestAndVerifyResponse(HttpMethod.GET, queryUrl, homePlatformId,
 				SecurityConstants.CORE_AAM_INSTANCE_ID, "search", new ParameterizedTypeReference<QueryResponse>() {
+				});
+
+	}
+
+	public ResponseEntity<FederationSearchResult> queryL2( String homePlatformId,
+												  String predicate) {
+
+		log.info("Searching for resources with token from platform " + homePlatformId);
+
+		String prUrl =  homePlatformUrl + "/pr/search" + predicate;
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+		return sendRequestAndVerifyResponse(HttpMethod.GET, prUrl, homePlatformId,
+                homePlatformId, "platformRegistry", new ParameterizedTypeReference<FederationSearchResult>() {
 				});
 
 	}

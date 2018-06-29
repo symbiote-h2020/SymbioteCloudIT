@@ -11,9 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ClientFixture {
@@ -338,8 +340,104 @@ public class ClientFixture {
 		return "DefaultService" + internalId;
 	}
 
+	protected ResponseEntity<QueryResponse>  searchL1Resources(String platformId,
+															   String platformName,
+															   String owner,
+															   String name,
+															   String id,
+															   String description,
+															   String location_name,
+															   Double location_lat,
+															   Double location_long,
+															   Integer max_distance,
+															   String[] observed_property,
+															   String[] observed_property_iri,
+															   String resource_type,
+															   Boolean should_rank,
+															   String homePlatformId) {
+		return searchResources(platformId,
+				platformName,
+				owner,
+				name,
+				id,
+				description,
+				location_name,
+				location_lat,
+				location_long,
+				max_distance,
+				observed_property,
+				observed_property_iri,
+				resource_type,
+				should_rank,
+				homePlatformId,
+				null,
+				Layer.L1);
+
+	}
+
+	protected ResponseEntity searchL2Resources(String platformId, String predicate) {
+
+		return searchResources(platformId,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				predicate,//L2 additional arguments
+				Layer.L2);
+	}
+
+	public ResponseEntity searchResources(String platformId,
+														 String platformName,
+														 String owner,
+														 String name,
+														 String id,
+														 String description,
+														 String location_name,
+														 Double location_lat,
+														 Double location_long,
+														 Integer max_distance,
+														 String[] observed_property,
+														 String[] observed_property_iri,
+														 String resource_type,
+														 Boolean should_rank,
+														 String homePlatformId,
+														 String predicate,
+														 Layer layer
+														 ) {
+
+		if (layer.equals(Layer.L1)) {
+			return client.query(platformId,
+					platformName,
+					owner,
+					name,
+					id,
+					description,
+					location_name,
+					location_lat,
+					location_long,
+					max_distance,
+					observed_property,
+					observed_property_iri,
+					resource_type,
+					should_rank,
+					homePlatformId);
+		}
+		else //L2 level
+			return client.queryL2(platformId,predicate);
+	}
+
 	private QueryResourceResult searchResourceByName(String name) {
-	    ResponseEntity<QueryResponse> query = client.query(platformId, // platformId, 
+	    ResponseEntity<QueryResponse> query = client.query(platformId, // platformId,
 	    		null, // platformName, 
 	    		null, // owner, 
 	    		name, // name, 
@@ -377,7 +475,7 @@ public class ClientFixture {
 		return query.getBody().getResources().get(0);
 	}
 
-	private enum Layer {
+	public enum Layer {
 	    L1, L2;
     }
 }

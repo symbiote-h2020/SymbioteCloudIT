@@ -47,32 +47,32 @@ public class Core_IntegrationTests extends ClientFixture {
 	@Test
 	public void testSearch() {
 		// GET http://localhost:8777/query?homePlatformId=xplatform&platform_id=xplatform
-        ResponseEntity<QueryResponse> query = client.query(platformId, // platformId,
-	    		null, // platformName, 
-	    		null, // owner, 
-	    		null, // name, 
-	    		null, // id, 
-	    		null, // description, 
-	    		null, // location_name, 
-	    		null, // location_lat, 
-	    		null, // location_long, 
-	    		null, // max_distance, 
-	    		null, // observed_property, 
-	    		null, // observed_property_iri, 
-	    		null, // resource_type, 
-	    		null, // should_rank, 
-	    		platformId  // homePlatformId - can not be null
-	    );
-	    
-	    assertThat(query.getStatusCodeValue()).isEqualTo(200);
-	    assertThat(query.getBody().getBody())
-	    	.filteredOn(new LambdaCondition<>(
-	    		r -> r.getName().contains(defaultResourceIdPrefix)
-			))
-	    	.extracting("name")
-	    	.containsOnly(getDefaultSensorName(),
-	    			getDefaultActuatorName(),
-	    			getDefaultServiceName());
+		ResponseEntity<QueryResponse> query = searchL1Resources(platformId, // platformId,
+				null, // platformName,
+				null, // owner,
+				null, // name,
+				null, // id,
+				null, // description,
+				null, // location_name,
+				null, // location_lat,
+				null, // location_long,
+				null, // max_distance,
+				null, // observed_property,
+				null, // observed_property_iri,
+				null, // resource_type,
+				null, // should_rank,
+				platformId  // homePlatformId - can not be null
+		);
+
+		assertThat(query.getStatusCodeValue()).isEqualTo(200);
+		assertThat(query.getBody().getBody())
+				.filteredOn(new LambdaCondition<>(
+						r -> r.getName().contains(defaultResourceIdPrefix)
+				))
+				.extracting("name")
+				.containsOnly(getDefaultSensorName(),
+						getDefaultActuatorName(),
+						getDefaultServiceName());
 	}
 	
 	@Test
