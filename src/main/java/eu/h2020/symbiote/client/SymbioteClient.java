@@ -76,7 +76,8 @@ public class SymbioteClient {
 			@Value("${demoApp.username}") String username, @Value("${demoApp.password}") String password,
 			@Value("${clientId}") String clientId, @Value("${paamOwner.username}") String paamOwnerUsername,
 			@Value("${paamOwner.password}") String paamOwnerPassword,
-            @Value("${test.iiUrl}") String homePlatformUrl)
+            @Value("${test.iiUrl}") String homePlatformUrl
+			)
 			throws SecurityHandlerException, NoSuchAlgorithmException {
 
 		Assert.notNull(symbIoTeCoreUrl, "symbIoTeCoreUrl can not be null!");

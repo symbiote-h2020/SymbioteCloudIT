@@ -283,6 +283,18 @@ public class ClientFixture {
         return restTemplate.exchange(rhUrl + (layer == Layer.L2 ? "/local" : "") + "/resources", HttpMethod.POST, requestEntity, type);
     }
 
+
+	public ResponseEntity<?> shareResources(Map<String, Map<String, Boolean>> sharingMap) {
+
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<Map<String, Map<String, Boolean>>> requestEntity = new HttpEntity<>(sharingMap, httpHeaders);
+		ParameterizedTypeReference<Map<String, List<CloudResource>>> type = new ParameterizedTypeReference<Map<String, List<CloudResource>>>() {};
+		return restTemplate.exchange(rhUrl + "/local/resources/share", HttpMethod.PUT, requestEntity, type);
+	}
+
 	private ResponseEntity deleteAllResources(Layer layer) {
 		// DELETE localhost:8001/resources?resourceInternalIds=el_isen1,el_iaid1
 		String ids = getResources().getBody().stream()
