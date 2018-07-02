@@ -19,9 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -127,6 +125,80 @@ public class RH_IntegrationTests extends ClientFixture {
 		assertNotNull(returnedResource.getFederationInfo().getAggregationId());
 		assertTrue(returnedResource.getFederationInfo().getSharingInformation().containsKey(fedId));
 		assertTrue(returnedResource.getFederationInfo().getSharingInformation().get(fedId).getBartering());
+
+		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
+	}
+
+
+	@Test
+	public void testRegisterResourcesMetadata() {//register with the resource metadata shared
+		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
+
+		LinkedList<CloudResource> resources = new LinkedList<>();
+		String fedId1="fed1";
+		String fedId2="fed2";
+
+
+		CloudResource defaultSensorResource = createSensorResource("", "isen1");
+
+		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
+		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
+		sharingInformationSensor1.setBartering(true);
+		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
+		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
+		sharingInformationSensor2.setBartering(false);
+		resourceSharingInformationMapSensor.put(fedId2, sharingInformationSensor2);
+		FederationInfoBean federationInfoBeanSensor = new FederationInfoBean();
+		federationInfoBeanSensor.setSharingInformation(resourceSharingInformationMapSensor);
+
+		defaultSensorResource.setFederationInfo(federationInfoBeanSensor);
+		resources.add(defaultSensorResource);
+
+
+		CloudResource defaultActuatorResource = createActuatorResource("", "iaid1");
+
+		Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
+		ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
+		sharingInformationActuator1.setBartering(true);
+		resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
+		FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
+		federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
+
+		defaultActuatorResource.setFederationInfo(federationInfoBeanActuator);
+		resources.add(defaultActuatorResource);
+
+
+		CloudResource defaultServiceResource = createServiceResource("", "isrid1");
+
+		Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
+		ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
+		sharingInformationService.setBartering(true);
+		resourceSharingInformationMapService.put(fedId1, sharingInformationService);
+		FederationInfoBean federationInfoBeanService = new FederationInfoBean();
+		federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);
+
+		defaultServiceResource.setFederationInfo(federationInfoBeanService);
+		resources.add(defaultServiceResource);
+
+
+		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+		assertEquals(3, responseEntity.getBody().size());
+		assertEquals(defaultSensorResource.getInternalId(), responseEntity.getBody().get(0).getInternalId());
+		assertNotNull(responseEntity.getBody().get(0).getFederationInfo().getAggregationId());
+		assertEquals(2,responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().size());
+		assertFalse(responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId2).getBartering());
+		assertTrue(responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+
+		assertEquals(defaultActuatorResource.getInternalId(), responseEntity.getBody().get(1).getInternalId());
+		assertNotNull(responseEntity.getBody().get(1).getFederationInfo().getAggregationId());
+		assertEquals(1,responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().size());
+		assertTrue(responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+
+		assertEquals(defaultServiceResource.getInternalId(), responseEntity.getBody().get(2).getInternalId());
+		assertNotNull(responseEntity.getBody().get(2).getFederationInfo().getAggregationId());
+		assertEquals(1,responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().size());
+		assertTrue(responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
 
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
