@@ -38,8 +38,8 @@ public class RAP_IntegrationTests extends ClientFixture {
 	@Before
 	public void setUp() throws Exception {
 		log.info("JUnit: setup START {}", new RuntimeException().getStackTrace()[0]);
-		clearRegistrationHandlerL2();//TODO: L2
-		registerDefaultL2Resources();//TODO: L2
+		clearRegistrationHandlerL2();
+	//	registerDefaultL2Resources();
 		log.info("JUnit: setup END {}", new RuntimeException().getStackTrace()[0]);
         TimeUnit.SECONDS.sleep(3);
     }
