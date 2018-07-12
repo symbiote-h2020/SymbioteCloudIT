@@ -100,8 +100,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		//get url
 		String name=defaultSensorResource.getResource().getName();//getDefaultSensorName();
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				"?name="+name);
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId, "?name="+name);
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl()

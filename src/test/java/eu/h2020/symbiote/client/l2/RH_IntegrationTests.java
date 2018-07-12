@@ -143,7 +143,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		ResponseEntity<?> responseEntity2 = shareResources(sharingMap);
 		Map<String, List<CloudResource>> result=(Map<String, List<CloudResource>>)responseEntity2.getBody();
 		assertTrue(result.containsKey(fedId));
-		assertNotNull(result.get(fedId).get(0).getFederationInfo().getSharingInformation().containsKey(fedId));
+		assertNotNull(result.get(fedId).get(0).getFederationInfo().getSharingInformation().get(fedId));
 
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}

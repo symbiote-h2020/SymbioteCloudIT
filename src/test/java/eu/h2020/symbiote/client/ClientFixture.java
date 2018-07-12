@@ -309,16 +309,18 @@ public class ClientFixture {
 
 	private ResponseEntity deleteAllResources(Layer layer) {
 		// DELETE localhost:8001/resources?resourceInternalIds=el_isen1,el_iaid1
-		String ids = getResources().getBody().stream()
-			.map(CloudResource::getInternalId)
-			.collect(Collectors.joining(","));
-
-		if (ids.isEmpty())
-		    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
 		HttpEntity requestEntity = new HttpEntity<>(null);
 
 		if (layer == Layer.L1) {
+			String ids = getResources().getBody().stream()
+					.filter(cloudResource -> cloudResource.getResource().getId() != null)
+					.map(CloudResource::getInternalId)
+					.collect(Collectors.joining(","));
+
+			if (ids.isEmpty())
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
             ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {
             };
 
@@ -326,6 +328,16 @@ public class ClientFixture {
                     rhUrl + "/resources?resourceInternalIds=" + ids,
                     HttpMethod.DELETE, requestEntity, type);
         } else {
+
+			String ids = getResources().getBody().stream()
+					.filter(cloudResource -> cloudResource.getFederationInfo() != null)
+					.map(CloudResource::getInternalId)
+					.collect(Collectors.joining(","));
+
+			if (ids.isEmpty())
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+
             ParameterizedTypeReference<ArrayList<String>> type = new ParameterizedTypeReference<ArrayList<String>>() {
             };
 
