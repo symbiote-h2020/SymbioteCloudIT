@@ -1,30 +1,49 @@
 package eu.h2020.symbiote.client;
 
+import eu.h2020.symbiote.client.interfaces.*;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import eu.h2020.symbiote.cloud.model.internal.FederationSearchResult;
+import eu.h2020.symbiote.cloud.model.internal.PlatformRegistryQuery;
 import eu.h2020.symbiote.core.ci.QueryResourceResult;
 import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.model.cim.*;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
 import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier;
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
+import eu.h2020.symbiote.security.communication.IAAMClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ClientFixture {
 
 	@Autowired
-	protected SymbioteClient client;
-	
-	@Autowired
 	protected RestTemplate restTemplate;
+
+	@Autowired
+	protected RHClient rhClient;
+
+    @Autowired
+    protected SearchClient searchClient;
+
+    @Autowired
+    protected CRAMClient cramClient;
+
+    @Autowired
+    protected RAPClient rapClient;
+
+    @Autowired
+    protected PRClient prClient;
+
+    @Autowired
+    protected IAAMClient iaamClient;
 
 	@Value("${test.platformId}")
 	protected String platformId;
@@ -33,31 +52,37 @@ public class ClientFixture {
 	protected String directAAMUrl;
 
 	@Value("${test.rhUrl}")
-	String rhUrl;
+    protected String rhUrl;
 
 	@Value("${test.iiUrl}")
-	String iiUrl;
+    protected String iiUrl;
 	
 	@Value("${keystorePath}")
-	String keystorePath;
+    protected String keystorePath;
 	
 	@Value("${keystorePassword}")
-	String keystorePassword;
+    protected String keystorePassword;
 
 	@Value("${paamOwner.username}")
-	String paamOwnerUsername;
+    protected String paamOwnerUsername;
 	
 	@Value("${paamOwner.password}")
-	String paamOwnerPassword;
+    protected String paamOwnerPassword;
 	
 	@Value("${clientId}")
-	String clientId;
+    protected String clientId;
 
 	@Value("${symbIoTeCoreUrl}")
-	String symbIoTeCoreUrl;
-	
+    protected String symbIoTeCoreUrl;
+
+    @Value("${demoApp.username}")
+    protected String username;
+
+    @Value("${demoApp.password}")
+    protected String password;
+
 	protected String defaultResourceIdPrefix;
-	
+
 	protected void clearRegistrationHandlerL1() {
 //		try {
 //			syncResources();
@@ -202,23 +227,20 @@ public class ClientFixture {
 	    return cloudResource;
 	}
 
-    protected ResponseEntity<ArrayList<CloudResource>> getResources() {
-        HttpEntity requestEntity = new HttpEntity<>(null);
-        ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
-        return restTemplate.exchange(
-                rhUrl + "/resources", HttpMethod.GET, requestEntity, type);
+    protected ResponseEntity<List<CloudResource>> getResources() {
+        return new ResponseEntity<>(rhClient.getResources(), HttpStatus.OK);
     }
 
-    protected ResponseEntity<ArrayList<CloudResource>> registerL1Resources(List<CloudResource> resources) {
-	    return registerResources(resources, Layer.L1);
+    protected ResponseEntity<List<CloudResource>> registerL1Resources(List<CloudResource> resources) {
+	    return new ResponseEntity<>(rhClient.addL1Resources(resources), HttpStatus.OK);
     }
 
-    protected ResponseEntity<ArrayList<CloudResource>> registerL2Resources(List<CloudResource> resources) {
-        return registerResources(resources, Layer.L2);
+    protected ResponseEntity<List<CloudResource>> registerL2Resources(List<CloudResource> resources) {
+        return new ResponseEntity<>(rhClient.addL2Resources(resources), HttpStatus.OK);
     }
 
 
-    protected ResponseEntity<ArrayList<CloudResource>> deleteAllL1Resources() {
+    protected ResponseEntity<List<CloudResource>> deleteAllL1Resources() {
         return deleteAllResources(Layer.L1);
     }
 
@@ -226,19 +248,17 @@ public class ClientFixture {
         return deleteAllResources(Layer.L2);
     }
 
-    protected ResponseEntity<ArrayList<CloudResource>> registerDefaultL1Resources() {
+    protected ResponseEntity<List<CloudResource>> registerDefaultL1Resources() {
         return registerDefaultResources(Layer.L1);
     }
 
-    protected ResponseEntity<ArrayList<CloudResource>> registerDefaultL2Resources() {
+    protected ResponseEntity<List<CloudResource>> registerDefaultL2Resources() {
         return registerDefaultResources(Layer.L2);
     }
 
-    protected ResponseEntity<ArrayList<CloudResource>> syncResources() {
+    protected ResponseEntity<List<CloudResource>> syncResources() {
         // PUT symbiotedoc.tel.fer.hr:8001/sync
-        HttpEntity requestEntity = new HttpEntity<>(null);
-        ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
-        return restTemplate.exchange(rhUrl + "/sync", HttpMethod.PUT, requestEntity, type);
+        return new ResponseEntity<>(rhClient.sync(), HttpStatus.OK);
     }
 
     protected LinkedList<CloudResource> createDefaultResources() {
@@ -269,42 +289,27 @@ public class ClientFixture {
         return getServiceName(defaultResourceIdPrefix + "-isrid1");
     }
 
-    private ResponseEntity<ArrayList<CloudResource>> registerResources(List<CloudResource> resources, Layer layer) {
+    private ResponseEntity<List<CloudResource>> registerResources(List<CloudResource> resources, Layer layer) {
         // POST localhost:8001/resources
         // Headers: content-type: application/json
         // body array of cloud resources
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<List<CloudResource>> requestEntity = new HttpEntity<>(resources, httpHeaders);
-        ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {};
-        return restTemplate.exchange(rhUrl + (layer == Layer.L2 ? "/local" : "") + "/resources", HttpMethod.POST, requestEntity, type);
+        if (layer == Layer.L1)
+            return new ResponseEntity<>(rhClient.addL1Resources(resources), HttpStatus.OK);
+        else
+            return new ResponseEntity<>(rhClient.addL2Resources(resources), HttpStatus.OK);
     }
 
 
 	public ResponseEntity<?> shareResources(Map<String, Map<String, Boolean>> sharingMap) {
 
-		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-		HttpEntity<Map<String, Map<String, Boolean>>> requestEntity = new HttpEntity<>(sharingMap, httpHeaders);
-		ParameterizedTypeReference<Map<String, List<CloudResource>>> type = new ParameterizedTypeReference<Map<String, List<CloudResource>>>() {};
-		return restTemplate.exchange(rhUrl + "/local/resources/share", HttpMethod.PUT, requestEntity, type);
+		return new ResponseEntity<>(rhClient.shareL2Resources(sharingMap), HttpStatus.OK);
 	}
 
 
     public ResponseEntity<?> unshareResources( Map<String, List<String>> unshareMap) {
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Map<String, List<String>>> requestEntity = new HttpEntity<>(unshareMap, httpHeaders);
-        ParameterizedTypeReference<Map<String, List<CloudResource>>> type = new ParameterizedTypeReference<Map<String, List<CloudResource>>>() {};
-        return restTemplate.exchange(rhUrl + "/local/resources/share", HttpMethod.DELETE, requestEntity, type);
+        return new ResponseEntity<>(rhClient.unshareL2Resources(unshareMap), HttpStatus.OK);
     }
 
 	private ResponseEntity deleteAllResources(Layer layer) {
@@ -313,41 +318,30 @@ public class ClientFixture {
 		HttpEntity requestEntity = new HttpEntity<>(null);
 
 		if (layer == Layer.L1) {
-			String ids = getResources().getBody().stream()
+			List<String> ids = getResources().getBody().stream()
 					.filter(cloudResource -> cloudResource.getResource().getId() != null)
 					.map(CloudResource::getInternalId)
-					.collect(Collectors.joining(","));
+					.collect(Collectors.toList());
 
 			if (ids.isEmpty())
 				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
-            ParameterizedTypeReference<ArrayList<CloudResource>> type = new ParameterizedTypeReference<ArrayList<CloudResource>>() {
-            };
-
-            return restTemplate.exchange(
-                    rhUrl + "/resources?resourceInternalIds=" + ids,
-                    HttpMethod.DELETE, requestEntity, type);
+            return new ResponseEntity(rhClient.deleteL1Resources(ids), HttpStatus.OK);
         } else {
 
-			String ids = getResources().getBody().stream()
+            List<String> ids = getResources().getBody().stream()
 					.filter(cloudResource -> cloudResource.getFederationInfo() != null)
 					.map(CloudResource::getInternalId)
-					.collect(Collectors.joining(","));
+					.collect(Collectors.toList());
 
 			if (ids.isEmpty())
 				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
-
-            ParameterizedTypeReference<ArrayList<String>> type = new ParameterizedTypeReference<ArrayList<String>>() {
-            };
-
-            return restTemplate.exchange(
-                    rhUrl + "/local/resources?resourceIds=" + ids,
-                    HttpMethod.DELETE, requestEntity, type);
+            return new ResponseEntity(rhClient.removeL2Resources(ids), HttpStatus.OK);
         }
 	}
 
-    private ResponseEntity<ArrayList<CloudResource>> registerDefaultResources(Layer layer) {
+    private ResponseEntity<List<CloudResource>> registerDefaultResources(Layer layer) {
         defaultResourceIdPrefix = String.valueOf(System.currentTimeMillis());
         LinkedList<CloudResource> resources = createDefaultResourceWithIdPrefix(defaultResourceIdPrefix);
 
@@ -376,143 +370,28 @@ public class ClientFixture {
 		return "DefaultService" + internalId;
 	}
 
-	protected ResponseEntity<QueryResponse>  searchL1Resources(String platformId,
-															   String platformName,
-															   String owner,
-															   String name,
-															   String id,
-															   String description,
-															   String location_name,
-															   Double location_lat,
-															   Double location_long,
-															   Integer max_distance,
-															   String[] observed_property,
-															   String[] observed_property_iri,
-															   String resource_type,
-															   Boolean should_rank,
-															   String homePlatformId) {
-		return searchResources(platformId,
-				platformName,
-				owner,
-				name,
-				id,
-				description,
-				location_name,
-				location_lat,
-				location_long,
-				max_distance,
-				observed_property,
-				observed_property_iri,
-				resource_type,
-				should_rank,
-				homePlatformId,
-				null,
-				Layer.L1);
-
+	protected ResponseEntity<QueryResponse>  searchL1Resources(CoreQueryRequest request) {
+        return new ResponseEntity<>(searchClient.search(request, true), HttpStatus.OK);
 	}
 
-	protected ResponseEntity searchL2Resources(String platformId, String predicate) {
+	protected ResponseEntity<FederationSearchResult> searchL2Resources(PlatformRegistryQuery query) {
 
-		return searchResources(platformId,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				predicate,//L2 additional arguments
-				Layer.L2);
-	}
-
-	public ResponseEntity searchResources(String platformId,
-														 String platformName,
-														 String owner,
-														 String name,
-														 String id,
-														 String description,
-														 String location_name,
-														 Double location_lat,
-														 Double location_long,
-														 Integer max_distance,
-														 String[] observed_property,
-														 String[] observed_property_iri,
-														 String resource_type,
-														 Boolean should_rank,
-														 String homePlatformId,
-														 String predicate,
-														 Layer layer
-														 ) {
-
-		if (layer.equals(Layer.L1)) {
-			return client.query(platformId,
-					platformName,
-					owner,
-					name,
-					id,
-					description,
-					location_name,
-					location_lat,
-					location_long,
-					max_distance,
-					observed_property,
-					observed_property_iri,
-					resource_type,
-					should_rank,
-					homePlatformId);
-		}
-		else //L2 level
-			return client.queryL2(platformId,predicate);
+		return new ResponseEntity<>(prClient.search(query, true), HttpStatus.OK);
 	}
 
 	private QueryResourceResult searchResourceByName(String name) {
-	    ResponseEntity<QueryResponse> query = client.query(platformId, // platformId,
-	    		null, // platformName, 
-	    		null, // owner, 
-	    		name, // name, 
-	    		null, // id, 
-	    		null, // description, 
-	    		null, // location_name, 
-	    		null, // location_lat, 
-	    		null, // location_long, 
-	    		null, // max_distance, 
-	    		null, // observed_property, 
-	    		null, // observed_property_iri, 
-	    		null, // resource_type, 
-	    		null, // should_rank, 
-	    		platformId  // homePlatformId - can not be null
-	    );
+	    CoreQueryRequest request = new CoreQueryRequest.Builder().name(name).platformId(platformId).build();
+	    QueryResponse query = searchClient.search(request, true);
 
 	    // If it is 0, ask one more time
-	    if (query.getBody().getResources().size() == 0)
-	        query = client.query(platformId, // platformId,
-                    null, // platformName,
-                    null, // owner,
-                    name, // name,
-                    null, // id,
-                    null, // description,
-                    null, // location_name,
-                    null, // location_lat,
-                    null, // location_long,
-                    null, // max_distance,
-                    null, // observed_property,
-                    null, // observed_property_iri,
-                    null, // resource_type,
-                    null, // should_rank,
-                    platformId  // homePlatformId - can not be null
-            );
-		return query.getBody().getResources().get(0);
+	    if (query.getResources().size() == 0)
+	        query = searchClient.search(request, true);
+
+		return query.getResources().get(0);
 	}
 
 	public enum Layer {
-	    L1, L2;
+	    L1, L2
     }
 }
 

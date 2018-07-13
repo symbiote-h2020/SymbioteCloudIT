@@ -3,13 +3,10 @@ package eu.h2020.symbiote.client.l12;
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.cloud.model.internal.FederationInfoBean;
 import eu.h2020.symbiote.cloud.model.internal.FederationSearchResult;
-import eu.h2020.symbiote.cloud.model.internal.ResourceSharingInformation;
+import eu.h2020.symbiote.cloud.model.internal.PlatformRegistryQuery;
 import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.model.cim.Actuator;
-import eu.h2020.symbiote.model.cim.Sensor;
-import eu.h2020.symbiote.model.cim.Service;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,27 +65,16 @@ public class RH_IntegrationTests extends ClientFixture {
 
         // Search in Core
         String name = result.get(fedId).get(0).getResource().getName();
-        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(platformId, // platformId,
-                null, // platformName,
-                null, // owner,
-                name, // name,
-                null, // id,
-                null, // description,
-                null, // location_name,
-                null, // location_lat,
-                null, // location_long,
-                null, // max_distance,
-                null, // observed_property,
-                null, // observed_property_iri,
-                null, // resource_type,
-                null, // should_rank,
-                platformId  // homePlatformId - can not be null
+        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
+                new CoreQueryRequest.Builder().name(name).platformId(platformId).build()
         );
 
         assertEquals(1, queryL1.getBody().getResources().size());
 
         // Search Platform Registry
-        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(platformId, "?name="+name);
+        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
         assertEquals(1, queryL2.getBody().getResources().size());
 
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
@@ -106,14 +92,14 @@ public class RH_IntegrationTests extends ClientFixture {
         registerL1TestSensorAndShareToFederation(fedId, bartering);
 
         // Delete from L1
-        ResponseEntity<ArrayList<CloudResource>> responseEntity = deleteAllL1Resources();
+        ResponseEntity<List<CloudResource>> responseEntity = deleteAllL1Resources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         // Assert that the Sensor has no symbIoTeId but it has aggregationId
         responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        ArrayList<CloudResource> result = responseEntity.getBody();
+        List<CloudResource> result = responseEntity.getBody();
         assertEquals(1, result.size());
         assertNull(result.get(0).getResource().getId());
         assertNotNull(result.get(0).getFederationInfo().getAggregationId());
@@ -122,27 +108,16 @@ public class RH_IntegrationTests extends ClientFixture {
 
         // Search in Core
         String name = result.get(0).getResource().getName();
-        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(platformId, // platformId,
-                null, // platformName,
-                null, // owner,
-                name, // name,
-                null, // id,
-                null, // description,
-                null, // location_name,
-                null, // location_lat,
-                null, // location_long,
-                null, // max_distance,
-                null, // observed_property,
-                null, // observed_property_iri,
-                null, // resource_type,
-                null, // should_rank,
-                platformId  // homePlatformId - can not be null
+        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
+                new CoreQueryRequest.Builder().name(name).platformId(platformId).build()
         );
 
         assertEquals(0, queryL1.getBody().getResources().size());
 
         // Search Platform Registry
-        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(platformId, "?name="+name);
+        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
         assertEquals(1, queryL2.getBody().getResources().size());
 
         log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
@@ -159,14 +134,14 @@ public class RH_IntegrationTests extends ClientFixture {
         registerL1TestSensorAndShareToFederation(fedId, bartering);
 
         // Delete from L2
-        ResponseEntity<ArrayList<CloudResource>> responseEntity = deleteAllL2Resources();
+        ResponseEntity<List<CloudResource>> responseEntity = deleteAllL2Resources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         // Assert that the Sensor has no federation info but it has symbioteId from Core
         responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        ArrayList<CloudResource> result = responseEntity.getBody();
+        List<CloudResource> result = responseEntity.getBody();
         assertEquals(1, result.size());
         assertNotNull(result.get(0).getResource().getId());
         assertNull(result.get(0).getFederationInfo());
@@ -174,27 +149,16 @@ public class RH_IntegrationTests extends ClientFixture {
         // Search in Core
         TimeUnit.SECONDS.sleep(1);
         String name = result.get(0).getResource().getName();
-        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(platformId, // platformId,
-                null, // platformName,
-                null, // owner,
-                name, // name,
-                null, // id,
-                null, // description,
-                null, // location_name,
-                null, // location_lat,
-                null, // location_long,
-                null, // max_distance,
-                null, // observed_property,
-                null, // observed_property_iri,
-                null, // resource_type,
-                null, // should_rank,
-                platformId  // homePlatformId - can not be null
+        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
+                new CoreQueryRequest.Builder().name(name).platformId(platformId).build()
         );
 
         assertEquals(1, queryL1.getBody().getResources().size());
 
         // Search Platform Registry
-        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(platformId, "?name="+name);
+        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
         assertEquals(0, queryL2.getBody().getResources().size());
 
         log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
@@ -210,7 +174,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
         // Register L1 resource, share it to federation and get back the name
         registerL1TestSensorAndShareToFederation(fedId, bartering);
-        ResponseEntity<ArrayList<CloudResource>> responseEntity = getResources();
+        ResponseEntity<List<CloudResource>> responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         String name = responseEntity.getBody().get(0).getResource().getName();
 
@@ -226,31 +190,20 @@ public class RH_IntegrationTests extends ClientFixture {
         responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        ArrayList<CloudResource> result = responseEntity.getBody();
+        List<CloudResource> result = responseEntity.getBody();
         assertEquals(0, result.size());
 
         // Search in Core
-        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(platformId, // platformId,
-                null, // platformName,
-                null, // owner,
-                name, // name,
-                null, // id,
-                null, // description,
-                null, // location_name,
-                null, // location_lat,
-                null, // location_long,
-                null, // max_distance,
-                null, // observed_property,
-                null, // observed_property_iri,
-                null, // resource_type,
-                null, // should_rank,
-                platformId  // homePlatformId - can not be null
+        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
+                new CoreQueryRequest.Builder().name(name).platformId(platformId).build()
         );
 
         assertEquals(0, queryL1.getBody().getResources().size());
 
         // Search Platform Registry
-        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(platformId, "?name="+name);
+        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
         assertEquals(0, queryL2.getBody().getResources().size());
 
         log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
@@ -266,7 +219,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
         // Register L1 resource, share it to federation and get back the name
         registerL1TestSensorAndShareToFederation(fedId, bartering);
-        ResponseEntity<ArrayList<CloudResource>> responseEntity = getResources();
+        ResponseEntity<List<CloudResource>> responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         String name = responseEntity.getBody().get(0).getResource().getName();
 
@@ -282,31 +235,20 @@ public class RH_IntegrationTests extends ClientFixture {
         responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        ArrayList<CloudResource> result = responseEntity.getBody();
+        List<CloudResource> result = responseEntity.getBody();
         assertEquals(0, result.size());
 
         // Search in Core
-        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(platformId, // platformId,
-                null, // platformName,
-                null, // owner,
-                name, // name,
-                null, // id,
-                null, // description,
-                null, // location_name,
-                null, // location_lat,
-                null, // location_long,
-                null, // max_distance,
-                null, // observed_property,
-                null, // observed_property_iri,
-                null, // resource_type,
-                null, // should_rank,
-                platformId  // homePlatformId - can not be null
+        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
+                new CoreQueryRequest.Builder().name(name).platformId(platformId).build()
         );
 
         assertEquals(0, queryL1.getBody().getResources().size());
 
         // Search Platform Registry
-        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(platformId, "?name="+name);
+        ResponseEntity<FederationSearchResult> queryL2 = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
         assertEquals(0, queryL2.getBody().getResources().size());
 
         log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
@@ -326,7 +268,7 @@ public class RH_IntegrationTests extends ClientFixture {
         CloudResource defaultSensorResource = createSensorResource(String.valueOf(System.currentTimeMillis()), "isen1");
         resources.add(defaultSensorResource);
 
-        ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL1Resources(resources);
+        ResponseEntity<List<CloudResource>> responseEntity = registerL1Resources(resources);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
         // Share the resource to a federation

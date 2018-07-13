@@ -2,7 +2,6 @@ package eu.h2020.symbiote.client.l1;
 
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
-import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
 import eu.h2020.symbiote.model.cim.Observation;
 import org.junit.After;
 import org.junit.Before;
@@ -11,12 +10,10 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,41 +43,38 @@ public class RAP_IntegrationTests extends ClientFixture {
 	public void testGetSensorObservation() {
 		// GET https://3ef144e8.ngrok.io/rap/Sensors('5ab412f14a234e0f916be9bf')/Observations?$top=1
 		String resourceId = findDefaultSensor().getId();
-		String url = getResourceUrl(resourceId) + "/Observations?$top=1";//, StandardCharsets.US_ASCII.name());
+		String url = getResourceUrl(resourceId);
+
+		Observation response = rapClient.getLatestObservation(url, true);
 		
-		ResponseEntity<List<Observation>> response = client.getResourceObservationHistory(url, platformId);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody())
-			.hasSize(1);
-		
+		assertThat(response.getResourceId()).isEqualTo(resourceId);
 	}
 
 	@Test
 	public void testGetSensorObservations2() {
 		// GET https://3ef144e8.ngrok.io/rap/Sensors('5ab412f14a234e0f916be9bf')/Observations?$top=2
 		String resourceId = findDefaultSensor().getId();
-		String url = getResourceUrl(resourceId) + "/Observations?$top=2";//, StandardCharsets.US_ASCII.name());
+		String url = getResourceUrl(resourceId);
+
+		List<Observation> response = rapClient.getTopObservations(url, 2, true);
 		
-		ResponseEntity<List<Observation>> response = client.getResourceObservationHistory(url, platformId);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody().size()).isLessThanOrEqualTo(2);
-		
-	}
+		assertThat(response.size()).isLessThanOrEqualTo(2);
+        assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
+
+
+    }
 
 	@Test
 	public void testGetSensorObservations100() {
 		// GET https://3ef144e8.ngrok.io/rap/Sensors('5ab412f14a234e0f916be9bf')/Observations?$top=100
 		String resourceId = findDefaultSensor().getId();
-		String url = getResourceUrl(resourceId) + "/Observations?$top=100";
-		
-		ResponseEntity<List<Observation>> response = client.getResourceObservationHistory(url, platformId);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody().size()).isLessThanOrEqualTo(100);
-		
-	}
+		String url = getResourceUrl(resourceId);
+
+        List<Observation> response = rapClient.getTopObservations(url, 100, true);
+
+        assertThat(response.size()).isLessThanOrEqualTo(100);
+        assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
+    }
 	
 	@Test
 	public void testActuate() {
@@ -104,9 +98,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"    }\n" + 
 				"  ]\n" + 
 				"}";
-		ResponseEntity<?> response = client.actuateResource(url, platformId, body);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(204);
+		rapClient.actuate(url, body, true);
 	}
 
 	@Test
@@ -125,16 +117,13 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"      \"inputParam1\" : \"on\"\n" + 
 				"  }\n" + 
 				"]";
-		ResponseEntity<String> response = client.invokeService(url, platformId, body, String.class);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody()).isEqualTo("\"some json\"");
+
+		String response = rapClient.invokeService(url, body, true);
+		assertThat(response).isEqualTo("some json");
 	}
 	
 
 	private String getResourceUrl(String resourceId) {
-		ResponseEntity<ResourceUrlsResponse> response = client.getResourceUrlFromCram(resourceId, platformId);
-		Map<String, String> map = response.getBody().getBody();
-		return map.get(resourceId);
+		return cramClient.getResourceUrl(resourceId, true).getBody().get(resourceId);
 	}
 }

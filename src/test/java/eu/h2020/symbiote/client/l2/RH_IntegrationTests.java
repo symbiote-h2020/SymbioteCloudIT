@@ -20,7 +20,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -46,7 +49,7 @@ public class RH_IntegrationTests extends ClientFixture {
 	@Test
 	public void testGetAllRegisteredResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = getResources();
+		ResponseEntity<List<CloudResource>> responseEntity = getResources();
 		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
@@ -68,7 +71,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultSensorResource = createSensorResource("", "isen1");
 		resources.add(defaultSensorResource);
 		
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertEquals(1, responseEntity.getBody().size());
 
@@ -86,7 +89,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultActuatorResource = createActuatorResource("", "iaid1");
 		resources.add(defaultActuatorResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
 		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 		assertEquals(1, responseEntity.getBody().size());
 
@@ -104,7 +107,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultServiceResource = createActuatorResource("", "isrid1");
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
 		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 		assertEquals(1, responseEntity.getBody().size());
 
@@ -118,7 +121,7 @@ public class RH_IntegrationTests extends ClientFixture {
 	@Test
 	public void testRegisterListOfResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerDefaultL2Resources();
+		ResponseEntity<List<CloudResource>> responseEntity = registerDefaultL2Resources();
 		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 		assertEquals(3, responseEntity.getBody().size());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
@@ -132,7 +135,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		CloudResource defaultSensorResource = createSensorResource("", "isen1");
 		resources.add(defaultSensorResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
 		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
 		String fedId="fed2";
@@ -144,6 +147,10 @@ public class RH_IntegrationTests extends ClientFixture {
 		Map<String, List<CloudResource>> result=(Map<String, List<CloudResource>>)responseEntity2.getBody();
 		assertTrue(result.containsKey(fedId));
 		assertNotNull(result.get(fedId).get(0).getFederationInfo().getSharingInformation().get(fedId));
+
+		String aggregationId = result.get(fedId).get(0).getFederationInfo().getAggregationId();
+		assertEquals(aggregationId + "@" + fedId,
+                result.get(fedId).get(0).getFederationInfo().getSharingInformation().get(fedId).getSymbioteId());
 
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
@@ -158,7 +165,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		resources.add(defaultActuatorResource);
 		CloudResource defaultServiceResource = createSensorResource("", "isrid1");
 		resources.add(defaultServiceResource);
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
 		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
 		String fedId1="fed1";
@@ -182,10 +189,12 @@ public class RH_IntegrationTests extends ClientFixture {
 		assertEquals(2,result.get(fedId2).get(0).getFederationInfo().getSharingInformation().size());
 		assertFalse(result.get(fedId2).get(0).getFederationInfo().getSharingInformation().get(fedId2).getBartering());
 		assertTrue(result.get(fedId1).get(0).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+
 		CloudResource actuator = result.get(fedId1).get(1).getResource() instanceof Actuator ?
 				result.get(fedId1).get(1) : result.get(fedId1).get(2);
 		CloudResource service = result.get(fedId1).get(2).getResource() instanceof Service ?
 				result.get(fedId1).get(2) : result.get(fedId1).get(1);
+
 		assertEquals(defaultActuatorResource.getInternalId(), actuator.getInternalId());
 		assertNotNull(actuator.getFederationInfo().getAggregationId());
 		assertEquals(1,actuator.getFederationInfo().getSharingInformation().size());
@@ -245,24 +254,36 @@ public class RH_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
 		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 		assertEquals(3, responseEntity.getBody().size());
+
 		assertEquals(defaultSensorResource.getInternalId(), responseEntity.getBody().get(0).getInternalId());
 		assertNotNull(responseEntity.getBody().get(0).getFederationInfo().getAggregationId());
 		assertEquals(2,responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().size());
 		assertFalse(responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId2).getBartering());
 		assertTrue(responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
 
-		assertEquals(defaultActuatorResource.getInternalId(), responseEntity.getBody().get(1).getInternalId());
+        String aggregationId = responseEntity.getBody().get(0).getFederationInfo().getAggregationId();
+        assertEquals(aggregationId + "@" + fedId1,
+                responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId1).getSymbioteId());
+
+        assertEquals(defaultActuatorResource.getInternalId(), responseEntity.getBody().get(1).getInternalId());
 		assertNotNull(responseEntity.getBody().get(1).getFederationInfo().getAggregationId());
 		assertEquals(1,responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().size());
 		assertTrue(responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+        aggregationId = responseEntity.getBody().get(1).getFederationInfo().getAggregationId();
+        assertEquals(aggregationId + "@" + fedId1,
+                responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().get(fedId1).getSymbioteId());
 
 		assertEquals(defaultServiceResource.getInternalId(), responseEntity.getBody().get(2).getInternalId());
 		assertNotNull(responseEntity.getBody().get(2).getFederationInfo().getAggregationId());
 		assertEquals(1,responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().size());
 		assertTrue(responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+
+        aggregationId = responseEntity.getBody().get(2).getFederationInfo().getAggregationId();
+        assertEquals(aggregationId + "@" + fedId1,
+                responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().get(fedId1).getSymbioteId());
 
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
@@ -314,7 +335,7 @@ public class RH_IntegrationTests extends ClientFixture {
         defaultServiceResource.setFederationInfo(federationInfoBeanService);
         resources.add(defaultServiceResource);
 
-        ResponseEntity<ArrayList<CloudResource>> responseEntity = registerL2Resources(resources);
+        ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
 
         //unshare resources sensor and actuator from the federations

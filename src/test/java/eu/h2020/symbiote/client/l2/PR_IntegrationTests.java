@@ -3,12 +3,8 @@ package eu.h2020.symbiote.client.l2;
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.LambdaCondition;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.cloud.model.internal.FederatedResource;
 import eu.h2020.symbiote.cloud.model.internal.FederationSearchResult;
-import eu.h2020.symbiote.core.ci.QueryResourceResult;
-import eu.h2020.symbiote.core.ci.QueryResponse;
-import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
+import eu.h2020.symbiote.cloud.model.internal.PlatformRegistryQuery;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,22 +12,16 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -57,12 +47,10 @@ public class PR_IntegrationTests extends ClientFixture {
 	@Test
 	public void testSearchResourcesByName() {
 
-		String names[] = {getDefaultSensorName(),
-				getDefaultServiceName()};
-		String name = String.join(",",names);
-
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				"?name="+name);
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+				new PlatformRegistryQuery.Builder().names(new ArrayList<>(Arrays.asList(getDefaultSensorName(),
+                        getDefaultServiceName()))).build()
+		);
 
 		assertThat(query.getStatusCodeValue()).isEqualTo(200);
 		assertThat(query.getBody().getResources())
@@ -78,9 +66,9 @@ public class PR_IntegrationTests extends ClientFixture {
 	@Test
 	public void testSearchResources() {
 
-		String predicate="";// null predicate for findAll();
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				predicate);
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+				new PlatformRegistryQuery.Builder().build()
+		);
 
 		assertThat(query.getStatusCodeValue()).isEqualTo(200);
 		assertThat(query.getBody().getResources())
@@ -97,10 +85,9 @@ public class PR_IntegrationTests extends ClientFixture {
 	@Test
 	public void testSearchResourcesLocatedAt() {
 
-		String predicate="?location_name=Berlin";
-
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				predicate);
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+		        new PlatformRegistryQuery.Builder().locationNames(new ArrayList<>(Collections.singleton("Berlin"))).build()
+        );
 
 		assertThat(query.getStatusCodeValue()).isEqualTo(200);
 		assertThat(query.getBody().getResources())
@@ -117,10 +104,9 @@ public class PR_IntegrationTests extends ClientFixture {
 //	@Test //todo: check updates from trust manager are successful
 	public void testSearchResourcesTrust() {
 
-		String predicate="?resource_trust=1.0&adaptive_trust=6.0";
-
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				predicate);
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+		        new PlatformRegistryQuery.Builder().resourceTrust(1.0).adaptiveTrust(6.0).build()
+        );
 
 		assertThat(query.getStatusCodeValue()).isEqualTo(200);
 		assertThat(query.getBody().getResources())

@@ -2,11 +2,7 @@ package eu.h2020.symbiote.client.l2;
 
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.cloud.model.internal.FederationInfoBean;
-import eu.h2020.symbiote.cloud.model.internal.FederationSearchResult;
-import eu.h2020.symbiote.cloud.model.internal.ResourceSharingInformation;
-import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
+import eu.h2020.symbiote.cloud.model.internal.*;
 import eu.h2020.symbiote.model.cim.Observation;
 import org.junit.After;
 import org.junit.Before;
@@ -15,7 +11,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -24,9 +19,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -96,21 +88,20 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseRegister = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
 
 		//get url
 		String name=defaultSensorResource.getResource().getName();//getDefaultSensorName();
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId, "?name="+name);
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+				new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+		);
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
-		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl()
-				+ "/Observations?$top=1";
+		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
-		ResponseEntity<List<Observation>> response = client.getResourceObservationHistory(url, platformId);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody())
-			.hasSize(1);
+        Observation response = rapClient.getLatestObservation(url, true);
+
+        assertThat(response).isNot(null);
 		
 	}
 
@@ -161,21 +152,19 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseRegister = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
 
 		//get url
 		String name=defaultSensorResource.getResource().getName();//getDefaultSensorName();
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				"?name="+name);
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+		        new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
-		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl()
-				+ "/Observations?$top=2";
-		ResponseEntity<List<Observation>> response = client.getResourceObservationHistory(url, platformId);
+		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
+        List<Observation> response = rapClient.getTopObservations(url, 2, true);
 
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody())
-				.hasSize(2);
+        assertThat(response.size()).isLessThanOrEqualTo(2);
 		
 	}
 
@@ -225,23 +214,20 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseRegister = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
 
 		//get url
 		String name=defaultSensorResource.getResource().getName();//getDefaultSensorName();
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				"?name="+name);
+        ResponseEntity<FederationSearchResult> query = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
-		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl()
-				+ "/Observations?$top=100";
-		ResponseEntity<List<Observation>> response = client.getResourceObservationHistory(url, platformId);
+		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody())
-				.hasSize(1);
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody().size()).isLessThanOrEqualTo(100);
+        List<Observation> response = rapClient.getTopObservations(url, 100, true);
+
+        assertThat(response.size()).isLessThanOrEqualTo(100);
 		
 	}
 	
@@ -301,12 +287,13 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseRegister = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
 
 		//get url
 		String name=defaultActuatorResource.getResource().getName();//getDefaultSensorName();
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				"?name="+name);
+        ResponseEntity<FederationSearchResult> query = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getRestUrl();
@@ -318,9 +305,8 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"    }\n" + 
 				"  ]\n" + 
 				"}";
-		ResponseEntity<?> response = client.actuateResource(url, platformId, body);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(204);
+        rapClient.actuate(url, body, true);
+
 	}
 
 	@Test
@@ -377,12 +363,13 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<ArrayList<CloudResource>> responseRegister = registerL2Resources(resources);
+		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
 
 		//get url
 		String name=defaultServiceResource.getResource().getName();//getDefaultSensorName();
-		ResponseEntity<FederationSearchResult> query = searchL2Resources(platformId,
-				"?name="+name);
+        ResponseEntity<FederationSearchResult> query = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getRestUrl();
@@ -392,10 +379,8 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"      \"inputParam1\" : \"on\"\n" + 
 				"  }\n" + 
 				"]";
-		ResponseEntity<String> response = client.invokeService(url, platformId, body, String.class);
-		
-		assertThat(response.getStatusCodeValue()).isEqualTo(200);
-		assertThat(response.getBody()).isEqualTo("\"some json\"");
+        String response = rapClient.invokeService(url, body, true);
+        assertThat(response).isEqualTo("\"some json\"");
 	}
 	
 
