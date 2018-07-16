@@ -219,7 +219,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
 		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
-		sharingInformationSensor1.setBartering(true);
+		sharingInformationSensor1.setBartering(false);
 		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
 		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
 		sharingInformationSensor2.setBartering(false);
@@ -234,7 +234,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
 		ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
-		sharingInformationActuator1.setBartering(true);
+		sharingInformationActuator1.setBartering(false);
 		resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
 		FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
 		federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
@@ -246,7 +246,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
 		ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
-		sharingInformationService.setBartering(true);
+		sharingInformationService.setBartering(false);
 		resourceSharingInformationMapService.put(fedId1, sharingInformationService);
 		FederationInfoBean federationInfoBeanService = new FederationInfoBean();
 		federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);
@@ -262,7 +262,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		assertNotNull(responseEntity.getBody().get(0).getFederationInfo().getAggregationId());
 		assertEquals(2,responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().size());
 		assertFalse(responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId2).getBartering());
-		assertTrue(responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+		assertFalse(responseEntity.getBody().get(0).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
 
         String aggregationId = responseEntity.getBody().get(0).getFederationInfo().getAggregationId();
         assertEquals(aggregationId + "@" + fedId1,
@@ -271,7 +271,7 @@ public class RH_IntegrationTests extends ClientFixture {
         assertEquals(defaultActuatorResource.getInternalId(), responseEntity.getBody().get(1).getInternalId());
 		assertNotNull(responseEntity.getBody().get(1).getFederationInfo().getAggregationId());
 		assertEquals(1,responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().size());
-		assertTrue(responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+		assertFalse(responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
         aggregationId = responseEntity.getBody().get(1).getFederationInfo().getAggregationId();
         assertEquals(aggregationId + "@" + fedId1,
                 responseEntity.getBody().get(1).getFederationInfo().getSharingInformation().get(fedId1).getSymbioteId());
@@ -279,7 +279,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		assertEquals(defaultServiceResource.getInternalId(), responseEntity.getBody().get(2).getInternalId());
 		assertNotNull(responseEntity.getBody().get(2).getFederationInfo().getAggregationId());
 		assertEquals(1,responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().size());
-		assertTrue(responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
+		assertFalse(responseEntity.getBody().get(2).getFederationInfo().getSharingInformation().get(fedId1).getBartering());
 
         aggregationId = responseEntity.getBody().get(2).getFederationInfo().getAggregationId();
         assertEquals(aggregationId + "@" + fedId1,
@@ -300,7 +300,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
         Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
         ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
-        sharingInformationSensor1.setBartering(true);
+        sharingInformationSensor1.setBartering(false);
         resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
         ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
         sharingInformationSensor2.setBartering(false);
@@ -315,7 +315,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
         Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
         ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
-        sharingInformationActuator1.setBartering(true);
+        sharingInformationActuator1.setBartering(false);
         resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
         FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
         federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
@@ -327,7 +327,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
         Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
         ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
-        sharingInformationService.setBartering(true);
+        sharingInformationService.setBartering(false);
         resourceSharingInformationMapService.put(fedId1, sharingInformationService);
         FederationInfoBean federationInfoBeanService = new FederationInfoBean();
         federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);

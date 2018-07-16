@@ -53,7 +53,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
 		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
-		sharingInformationSensor1.setBartering(true);
+		sharingInformationSensor1.setBartering(false);
 		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
 		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
 		sharingInformationSensor2.setBartering(false);
@@ -68,7 +68,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
 		ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
-		sharingInformationActuator1.setBartering(true);
+		sharingInformationActuator1.setBartering(false);
 		resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
 		FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
 		federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
@@ -80,7 +80,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
 		ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
-		sharingInformationService.setBartering(true);
+		sharingInformationService.setBartering(false);
 		resourceSharingInformationMapService.put(fedId1, sharingInformationService);
 		FederationInfoBean federationInfoBeanService = new FederationInfoBean();
 		federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);
@@ -91,17 +91,17 @@ public class RAP_IntegrationTests extends ClientFixture {
 		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
 
 		//get url
-		String name=defaultSensorResource.getResource().getName();//getDefaultSensorName();
+		String name=defaultSensorResource.getResource().getName();
 		ResponseEntity<FederationSearchResult> query = searchL2Resources(
 				new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
 		);
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
-
-		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
+        String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
+        String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
         Observation response = rapClient.getLatestObservation(url, true);
 
-        assertThat(response).isNot(null);
+		assertThat(response.getResourceId()).isEqualTo(resourceId);
 		
 	}
 
@@ -117,7 +117,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
 		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
-		sharingInformationSensor1.setBartering(true);
+		sharingInformationSensor1.setBartering(false);
 		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
 		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
 		sharingInformationSensor2.setBartering(false);
@@ -132,7 +132,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
 		ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
-		sharingInformationActuator1.setBartering(true);
+		sharingInformationActuator1.setBartering(false);
 		resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
 		FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
 		federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
@@ -144,7 +144,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
 		ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
-		sharingInformationService.setBartering(true);
+		sharingInformationService.setBartering(false);
 		resourceSharingInformationMapService.put(fedId1, sharingInformationService);
 		FederationInfoBean federationInfoBeanService = new FederationInfoBean();
 		federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);
@@ -161,12 +161,13 @@ public class RAP_IntegrationTests extends ClientFixture {
         );
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
-		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
+        String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
+        String url = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
         List<Observation> response = rapClient.getTopObservations(url, 2, true);
 
         assertThat(response.size()).isLessThanOrEqualTo(2);
-		
-	}
+        assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
+    }
 
 	@Test
 	public void testGetSensorObservations100() {
@@ -179,7 +180,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
 		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
-		sharingInformationSensor1.setBartering(true);
+		sharingInformationSensor1.setBartering(false);
 		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
 		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
 		sharingInformationSensor2.setBartering(false);
@@ -194,7 +195,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
 		ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
-		sharingInformationActuator1.setBartering(true);
+		sharingInformationActuator1.setBartering(false);
 		resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
 		FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
 		federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
@@ -206,7 +207,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
 		ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
-		sharingInformationService.setBartering(true);
+		sharingInformationService.setBartering(false);
 		resourceSharingInformationMapService.put(fedId1, sharingInformationService);
 		FederationInfoBean federationInfoBeanService = new FederationInfoBean();
 		federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);
@@ -221,15 +222,14 @@ public class RAP_IntegrationTests extends ClientFixture {
         ResponseEntity<FederationSearchResult> query = searchL2Resources(
                 new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
         );
-		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
-
+        String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
         List<Observation> response = rapClient.getTopObservations(url, 100, true);
 
         assertThat(response.size()).isLessThanOrEqualTo(100);
-		
-	}
+        assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
+    }
 	
 	@Test
 	public void testActuate() {
@@ -252,7 +252,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
 		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
-		sharingInformationSensor1.setBartering(true);
+		sharingInformationSensor1.setBartering(false);
 		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
 		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
 		sharingInformationSensor2.setBartering(false);
@@ -267,7 +267,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
 		ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
-		sharingInformationActuator1.setBartering(true);
+		sharingInformationActuator1.setBartering(false);
 		resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
 		FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
 		federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
@@ -279,7 +279,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
 		ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
-		sharingInformationService.setBartering(true);
+		sharingInformationService.setBartering(false);
 		resourceSharingInformationMapService.put(fedId1, sharingInformationService);
 		FederationInfoBean federationInfoBeanService = new FederationInfoBean();
 		federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);
@@ -296,7 +296,7 @@ public class RAP_IntegrationTests extends ClientFixture {
         );
 		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
-		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getRestUrl();
+		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 		
 		String body = "{\n" + 
 				"  \"OnOffCapability\" : [\n" + 
@@ -328,7 +328,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
 		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
-		sharingInformationSensor1.setBartering(true);
+		sharingInformationSensor1.setBartering(false);
 		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
 		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
 		sharingInformationSensor2.setBartering(false);
@@ -343,7 +343,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapActuator = new HashMap<>();
 		ResourceSharingInformation sharingInformationActuator1 = new ResourceSharingInformation();
-		sharingInformationActuator1.setBartering(true);
+		sharingInformationActuator1.setBartering(false);
 		resourceSharingInformationMapActuator.put(fedId1, sharingInformationActuator1);
 		FederationInfoBean federationInfoBeanActuator = new FederationInfoBean();
 		federationInfoBeanActuator.setSharingInformation(resourceSharingInformationMapActuator);
@@ -355,7 +355,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		Map<String, ResourceSharingInformation> resourceSharingInformationMapService = new HashMap<>();
 		ResourceSharingInformation sharingInformationService = new ResourceSharingInformation();
-		sharingInformationService.setBartering(true);
+		sharingInformationService.setBartering(false);
 		resourceSharingInformationMapService.put(fedId1, sharingInformationService);
 		FederationInfoBean federationInfoBeanService = new FederationInfoBean();
 		federationInfoBeanService.setSharingInformation(resourceSharingInformationMapService);
@@ -370,9 +370,8 @@ public class RAP_IntegrationTests extends ClientFixture {
         ResponseEntity<FederationSearchResult> query = searchL2Resources(
                 new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
         );
-		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
-		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getRestUrl();
+		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
 		String body = "[\n" + 
 				"  {\n" + 
@@ -380,7 +379,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"  }\n" + 
 				"]";
         String response = rapClient.invokeService(url, body, true);
-        assertThat(response).isEqualTo("\"some json\"");
+        assertThat(response).isEqualTo("some json");
 	}
 	
 
