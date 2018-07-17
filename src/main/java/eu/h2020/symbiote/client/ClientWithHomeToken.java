@@ -27,8 +27,8 @@ public class ClientWithHomeToken {
         // FILL ME
         // mandatory to run
         String coreAddress = "https://symbiote-open.man.poznan.pl";
-        String keystorePath = "keystore";
-        String keystorePassword = "pass123";
+        String keystorePath = "testKeystore";
+        String keystorePassword = "testKeystore";
         String exampleHomePlatformIdentifier = "exampleHomePlatformIdentifier";
 
         Type type = Type.FEIGN;
