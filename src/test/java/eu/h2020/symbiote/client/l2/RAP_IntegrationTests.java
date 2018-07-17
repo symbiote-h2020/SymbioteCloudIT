@@ -99,7 +99,7 @@ public class RAP_IntegrationTests extends ClientFixture {
         String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
         String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
-        Observation response = rapClient.getLatestObservation(url, true);
+        Observation response = rapClient.getLatestObservation(url, true, homePlatformIds);
 
 		assertThat(response.getResourceId()).isEqualTo(resourceId);
 		
@@ -163,7 +163,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 
         String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
         String url = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
-        List<Observation> response = rapClient.getTopObservations(url, 2, true);
+        List<Observation> response = rapClient.getTopObservations(url, 2, true, homePlatformIds);
 
         assertThat(response.size()).isLessThanOrEqualTo(2);
         assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
@@ -225,7 +225,7 @@ public class RAP_IntegrationTests extends ClientFixture {
         String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
-        List<Observation> response = rapClient.getTopObservations(url, 100, true);
+        List<Observation> response = rapClient.getTopObservations(url, 100, true, homePlatformIds);
 
         assertThat(response.size()).isLessThanOrEqualTo(100);
         assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
@@ -305,7 +305,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"    }\n" + 
 				"  ]\n" + 
 				"}";
-        rapClient.actuate(url, body, true);
+        rapClient.actuate(url, body, true, homePlatformIds);
 
 	}
 
@@ -378,7 +378,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"      \"inputParam1\" : \"on\"\n" + 
 				"  }\n" + 
 				"]";
-        String response = rapClient.invokeService(url, body, true);
+        String response = rapClient.invokeService(url, body, true, homePlatformIds);
         assertThat(response).isEqualTo("some json");
 	}
 	

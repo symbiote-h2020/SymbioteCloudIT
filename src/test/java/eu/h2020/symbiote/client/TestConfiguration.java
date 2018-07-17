@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @Configuration
 public class TestConfiguration {
@@ -36,23 +39,24 @@ public class TestConfiguration {
     @Bean
     public AbstractSymbIoTeClientFactory abstractSymbIoTeClientFactory() throws SecurityHandlerException, NoSuchAlgorithmException {
         String coreUrl = symbIoTeCoreUrl.replace("/coreInterface", "");
-        return AbstractSymbIoTeClientFactory
+        AbstractSymbIoTeClientFactory factory = AbstractSymbIoTeClientFactory
                 .getFactory(new AbstractSymbIoTeClientFactory.Config(
                                 coreUrl,
                                 keystorePath,
                                 keystorePassword,
-                                platformId,
-                                username,
-                                password,
-                                clientId,
                                 AbstractSymbIoTeClientFactory.Type.FEIGN
                         )
                 );
+        AbstractSymbIoTeClientFactory.HomePlatformCredentials homePlatformCredentials =
+                new AbstractSymbIoTeClientFactory.HomePlatformCredentials(platformId, username, password, clientId);
+        factory.initializeInHomePlatforms(new HashSet<>(Collections.singletonList(homePlatformCredentials)));
+
+        return factory;
     }
 
     @Bean
     public RHClient rhClient(AbstractSymbIoTeClientFactory abstractSymbIoTeClientFactory) {
-        return abstractSymbIoTeClientFactory.getRHClient();
+        return abstractSymbIoTeClientFactory.getRHClient(platformId);
     }
 
     @Bean
@@ -72,11 +76,16 @@ public class TestConfiguration {
 
     @Bean
     public PRClient prClient(AbstractSymbIoTeClientFactory abstractSymbIoTeClientFactory) {
-        return abstractSymbIoTeClientFactory.getPRClient();
+        return abstractSymbIoTeClientFactory.getPRClient(platformId);
     }
 
     @Bean
     public IAAMClient iaamClient(AbstractSymbIoTeClientFactory abstractSymbIoTeClientFactory) {
-        return abstractSymbIoTeClientFactory.getAAMClient();
+        return abstractSymbIoTeClientFactory.getAAMClient(platformId);
+    }
+
+    @Bean(name = "homePlatformIds")
+    public Set<String> homePlatformIds() {
+        return new HashSet<>(Collections.singletonList(platformId));
     }
 }

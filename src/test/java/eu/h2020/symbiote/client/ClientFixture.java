@@ -13,6 +13,7 @@ import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenA
 import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.communication.IAAMClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -44,6 +45,10 @@ public class ClientFixture {
 
     @Autowired
     protected IAAMClient iaamClient;
+
+    @Autowired
+    @Qualifier("homePlatformIds")
+    protected Set<String> homePlatformIds;
 
 	@Value("${test.platformId}")
 	protected String platformId;
@@ -83,7 +88,7 @@ public class ClientFixture {
 
 	protected String defaultResourceIdPrefix;
 
-	protected void clearRegistrationHandlerL1() {
+    protected void clearRegistrationHandlerL1() {
 //		try {
 //			syncResources();
 //		} catch (Exception e) {
@@ -371,21 +376,21 @@ public class ClientFixture {
 	}
 
 	protected ResponseEntity<QueryResponse>  searchL1Resources(CoreQueryRequest request) {
-        return new ResponseEntity<>(searchClient.search(request, true), HttpStatus.OK);
+        return new ResponseEntity<>(searchClient.search(request, true, homePlatformIds), HttpStatus.OK);
 	}
 
 	protected ResponseEntity<FederationSearchResult> searchL2Resources(PlatformRegistryQuery query) {
 
-		return new ResponseEntity<>(prClient.search(query, true), HttpStatus.OK);
+		return new ResponseEntity<>(prClient.search(query, true, homePlatformIds), HttpStatus.OK);
 	}
 
 	private QueryResourceResult searchResourceByName(String name) {
 	    CoreQueryRequest request = new CoreQueryRequest.Builder().name(name).platformId(platformId).build();
-	    QueryResponse query = searchClient.search(request, true);
+	    QueryResponse query = searchClient.search(request, true, homePlatformIds);
 
 	    // If it is 0, ask one more time
 	    if (query.getResources().size() == 0)
-	        query = searchClient.search(request, true);
+	        query = searchClient.search(request, true, homePlatformIds);
 
 		return query.getResources().get(0);
 	}

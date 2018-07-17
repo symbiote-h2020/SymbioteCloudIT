@@ -47,7 +47,7 @@ public class Core_IntegrationTests extends ClientFixture {
 	@Test
 	public void testSearch() {
 		// GET http://localhost:8777/query?homePlatformId=xplatform&platform_id=xplatform
-		QueryResponse query = searchClient.search(new CoreQueryRequest.Builder().platformId(platformId).build(), true);
+		QueryResponse query = searchClient.search(new CoreQueryRequest.Builder().platformId(platformId).build(), true, homePlatformIds);
 
 		assertThat(query.getBody())
 				.filteredOn(new LambdaCondition<>(
@@ -64,7 +64,7 @@ public class Core_IntegrationTests extends ClientFixture {
         // POST http://localhost:8777/get_resource_url?platformId=xplatform&resourceId=5ab412f14a234e0f916be9bf
 
 		String resourceId = findDefaultSensor().getId();
-		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true);
+		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true, homePlatformIds);
 
 		assertUrlExists(response, resourceId);
 		assertUrlPath(response, resourceId, "/rap/Sensors('" + resourceId + "')");
@@ -73,7 +73,7 @@ public class Core_IntegrationTests extends ClientFixture {
 	@Test
 	public void testGetUrlForActuator() throws Exception {
         String resourceId = findDefaultActuator().getId();
-		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true);
+		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true, homePlatformIds);
 		
 		assertUrlExists(response, resourceId);
 		assertUrlPath(response, resourceId, "/rap/Actuators('" + resourceId + "')");
@@ -82,7 +82,7 @@ public class Core_IntegrationTests extends ClientFixture {
 	@Test
 	public void testGetUrlForService() throws Exception {
 		String resourceId = findDefaultService().getId();
-		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true);
+		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true, homePlatformIds);
 		
 		assertUrlExists(response, resourceId);
 		assertUrlPath(response, resourceId, "/rap/Services('" + resourceId + "')");

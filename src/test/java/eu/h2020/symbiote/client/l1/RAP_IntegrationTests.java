@@ -45,7 +45,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 		String resourceId = findDefaultSensor().getId();
 		String url = getResourceUrl(resourceId);
 
-		Observation response = rapClient.getLatestObservation(url, true);
+		Observation response = rapClient.getLatestObservation(url, true, homePlatformIds);
 		
 		assertThat(response.getResourceId()).isEqualTo(resourceId);
 	}
@@ -56,7 +56,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 		String resourceId = findDefaultSensor().getId();
 		String url = getResourceUrl(resourceId);
 
-		List<Observation> response = rapClient.getTopObservations(url, 2, true);
+		List<Observation> response = rapClient.getTopObservations(url, 2, true, homePlatformIds);
 		
 		assertThat(response.size()).isLessThanOrEqualTo(2);
         assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
@@ -70,7 +70,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 		String resourceId = findDefaultSensor().getId();
 		String url = getResourceUrl(resourceId);
 
-        List<Observation> response = rapClient.getTopObservations(url, 100, true);
+        List<Observation> response = rapClient.getTopObservations(url, 100, true, homePlatformIds);
 
         assertThat(response.size()).isLessThanOrEqualTo(100);
         assertThat(response.get(0).getResourceId()).isEqualTo(resourceId);
@@ -98,7 +98,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"    }\n" + 
 				"  ]\n" + 
 				"}";
-		rapClient.actuate(url, body, true);
+		rapClient.actuate(url, body, true, homePlatformIds);
 	}
 
 	@Test
@@ -118,12 +118,12 @@ public class RAP_IntegrationTests extends ClientFixture {
 				"  }\n" + 
 				"]";
 
-		String response = rapClient.invokeService(url, body, true);
+		String response = rapClient.invokeService(url, body, true, homePlatformIds);
 		assertThat(response).isEqualTo("some json");
 	}
 	
 
 	private String getResourceUrl(String resourceId) {
-		return cramClient.getResourceUrl(resourceId, true).getBody().get(resourceId);
+		return cramClient.getResourceUrl(resourceId, true, homePlatformIds).getBody().get(resourceId);
 	}
 }

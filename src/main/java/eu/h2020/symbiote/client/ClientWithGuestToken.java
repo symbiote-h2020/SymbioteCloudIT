@@ -29,7 +29,7 @@ public class ClientWithGuestToken {
         Type type = Type.FEIGN;
 
         // Get the configuration
-        Config config = getGuestTokenConfiguration(coreAddress, keystorePath, keystorePassword, type);
+        Config config = new Config(coreAddress, keystorePath, keystorePassword, type);
 
         // Get the factory
         AbstractSymbIoTeClientFactory factory;
@@ -51,6 +51,8 @@ public class ClientWithGuestToken {
          */
 
         // Create the request
+        // Here, we specify just one search criteria, which is the platform id. You can add more criteria, such as
+        // platform name, location, etc. You can check what the CoreQueryRequest.Builder supports
         CoreQueryRequest coreQueryRequest = new CoreQueryRequest.Builder()
                 .platformId("fer1")
                 .build();
