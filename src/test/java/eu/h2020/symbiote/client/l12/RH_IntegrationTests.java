@@ -86,7 +86,7 @@ public class RH_IntegrationTests extends ClientFixture {
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
         LinkedList<CloudResource> resources = new LinkedList<>();
-        CloudResource defaultSensorResource = createSensorResource("", "isen1");
+        CloudResource defaultSensorResource = createSensorResource(String.valueOf(System.currentTimeMillis()), "isen1");
         resources.add(defaultSensorResource);
 
         //register L2
