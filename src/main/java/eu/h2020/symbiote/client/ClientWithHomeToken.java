@@ -25,13 +25,12 @@ public class ClientWithHomeToken {
          */
 
         // FILL ME
+        // mandatory to run
         String coreAddress = "https://symbiote-open.man.poznan.pl";
         String keystorePath = "testKeystore";
         String keystorePassword = "testKeystore";
-        String homePlatformId = "homePlatformId";
-        String username = "userNameInHomePlatform";
-        String password = "passwordInHomePlatform";
-        String clientId = "exampleClientId";
+        String exampleHomePlatformIdentifier = "exampleHomePlatformIdentifier";
+
         Type type = Type.FEIGN;
 
         // Get the configuration
@@ -42,14 +41,33 @@ public class ClientWithHomeToken {
         try {
             factory = getFactory(config);
 
-            // ATTENTION: This should be preferably an interactive procedure to avoid persisting credentials
+
+            // OPTIONAL section... needs to be run only once
+            // - per new platform
+            // and/or after revoking client certificate in an already initialized platform
+
+
+            // ATTENTION: This MUST be an interactive procedure to avoid persisting credentials (password)
             // Here, you can add credentials FOR MORE THAN 1 platforms
             Set<HomePlatformCredentials> platformCredentials = new HashSet<>();
-            HomePlatformCredentials exampleHomePlatformCredentials = new HomePlatformCredentials(homePlatformId, username, password, clientId);
+
+            // example credentials
+            String username = "userNameInHomePlatform";
+            String password = "passwordInHomePlatform";
+            String clientId = "exampleClientId";
+            HomePlatformCredentials exampleHomePlatformCredentials = new HomePlatformCredentials(
+                    exampleHomePlatformIdentifier,
+                    username,
+                    password,
+                    clientId);
             platformCredentials.add(exampleHomePlatformCredentials);
+
 
             // Get Certificates for the specified platforms
             factory.initializeInHomePlatforms(platformCredentials);
+
+            // end of optional section..
+            // After running it the first time and creating the client keystore you should comment out this section.
         } catch (SecurityHandlerException | NoSuchAlgorithmException e) {
             e.printStackTrace();
             return;
@@ -61,7 +79,7 @@ public class ClientWithHomeToken {
         RAPClient rapClient = factory.getRapClient();
 
         // The set of platforms from which we are going to request credentials for our requests
-        Set<String> platformIds = new HashSet<>(Collections.singletonList(homePlatformId));
+        Set<String> platformIds = new HashSet<>(Collections.singletonList(exampleHomePlatformIdentifier));
 
         /*
         Search for resources in Core
