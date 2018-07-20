@@ -261,6 +261,138 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
 
+    @Test
+    public void registerL2registerL1deleteL2getL1() {  //register L2 then L1. Get observations for L2 and L1.
+        log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
+
+        LinkedList<CloudResource> resourcesL1 = new LinkedList<>();
+        LinkedList<CloudResource> resourcesL2 = new LinkedList<>();
+        CloudResource defaultSensorResource = createSensorResource(String.valueOf(System.currentTimeMillis()), "isen1");
+        resourcesL1.add(defaultSensorResource);
+
+        //add resource metadata required for L2
+        String fedId1="fed1";
+        String fedId2="fed2";
+        Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
+        ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
+        sharingInformationSensor1.setBartering(false);
+        resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
+        ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
+        sharingInformationSensor2.setBartering(false);
+        resourceSharingInformationMapSensor.put(fedId2, sharingInformationSensor2);
+        FederationInfoBean federationInfoBeanSensor = new FederationInfoBean();
+        federationInfoBeanSensor.setSharingInformation(resourceSharingInformationMapSensor);
+        defaultSensorResource.setFederationInfo(federationInfoBeanSensor);
+
+        resourcesL2.add(defaultSensorResource);
+
+        //register L2
+        ResponseEntity<List<CloudResource>> responseEntityL2 = registerL2Resources(resourcesL2);
+        assertEquals(HttpStatus.OK, responseEntityL2.getStatusCode());
+        assertEquals(1, responseEntityL2.getBody().size());
+        CloudResource returnedResource = responseEntityL2.getBody().get(0);
+        assertEquals(defaultSensorResource.getInternalId(), returnedResource.getInternalId());
+        assertNotNull(returnedResource.getFederationInfo());
+        assertNotNull(returnedResource.getFederationInfo().getAggregationId());
+
+        //register L1
+        ResponseEntity<List<CloudResource>> responseEntityL1 = registerL1Resources(resourcesL1);
+        assertThat(responseEntityL1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntityL1.getBody()).hasSize(1);
+        CloudResource returnedResourceL1 = responseEntityL1.getBody().get(0);
+        assertThat(returnedResourceL1.getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
+        assertThat(returnedResourceL1.getResource().getId()).isNotNull();
+
+        //get resource name
+        String name=defaultSensorResource.getResource().getName();
+
+        // Delete from L2
+        ResponseEntity<List<CloudResource>> responseL2 = deleteAllL2Resources();
+        assertThat(responseL2.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        //rhClient.removeL2Resources(ids);
+
+
+        //get observations for L1: Search in Core and get Url for L1
+        ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
+                new CoreQueryRequest.Builder().name(name).platformId(platformId).build()
+        );
+
+        String resourceIdL1 = queryL1.getBody().getResources().get(0).getId();//searchResourceByName();//findDefaultSensor().getId();
+        String urlL1 = cramClient.getResourceUrl(resourceIdL1, true, homePlatformIds).getBody().get(resourceIdL1);
+        Observation responseL1 = rapClient.getLatestObservation(urlL1, true, homePlatformIds);
+        assertThat(responseL1.getResourceId()).isEqualTo(resourceIdL1);
+
+        log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
+    }
+
+    @Test
+    public void registerL1registerL2deleteL1getL2() {//register L1 then L2. Get observations for L1 and L2.
+
+        log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
+
+        String fedId1="fed1";
+        String fedId2="fed2";
+
+        //add resource metadata for L1
+        LinkedList<CloudResource> resourcesL1 = new LinkedList<>();
+        CloudResource defaultSensorResource = createSensorResource(String.valueOf(System.currentTimeMillis()), "isen1");
+        resourcesL1.add(defaultSensorResource);
+
+        //register L1
+        ResponseEntity<List<CloudResource>> responseEntityL1 = registerL1Resources(resourcesL1);
+        assertThat(responseEntityL1.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntityL1.getBody()).hasSize(1);
+        CloudResource returnedResourceL1 = responseEntityL1.getBody().get(0);
+
+        assertThat(returnedResourceL1.getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
+        assertThat(returnedResourceL1.getResource().getId()).isNotNull();
+
+        //add extra resource metadata for L2
+        LinkedList<CloudResource> resourcesL2 = new LinkedList<>();
+        Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
+        ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
+        sharingInformationSensor1.setBartering(false);
+        resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
+        ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
+        sharingInformationSensor2.setBartering(false);
+        resourceSharingInformationMapSensor.put(fedId2, sharingInformationSensor2);
+        FederationInfoBean federationInfoBeanSensor = new FederationInfoBean();
+        federationInfoBeanSensor.setSharingInformation(resourceSharingInformationMapSensor);
+        defaultSensorResource.setFederationInfo(federationInfoBeanSensor);
+        resourcesL2.add(defaultSensorResource);
+
+        //register L2
+        ResponseEntity<List<CloudResource>> responseEntityL2 = registerL2Resources(resourcesL2);
+        assertEquals(HttpStatus.OK, responseEntityL2.getStatusCode());
+        assertEquals(1, responseEntityL2.getBody().size());
+        CloudResource returnedResource = responseEntityL2.getBody().get(0);
+        assertEquals(defaultSensorResource.getInternalId(), returnedResource.getInternalId());
+        assertNotNull(returnedResource.getFederationInfo());
+        assertNotNull(returnedResource.getFederationInfo().getAggregationId());
+
+        //get resource name
+        String name=defaultSensorResource.getResource().getName();
+
+        // Delete from L1
+        ResponseEntity<List<CloudResource>> responseL1 = deleteAllL1Resources();
+        assertThat(responseL1.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+
+        //get observations for L2: Search in PR and get Url for L2
+        ResponseEntity<FederationSearchResult> query = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
+
+        String resourceIdL2 = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
+        String urlL2=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
+        Observation responseL2 = rapClient.getLatestObservation(urlL2, true, homePlatformIds);
+        assertThat(responseL2.getResourceId()).isEqualTo(resourceIdL2);
+
+        log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
+    }
+
+
 
     @Test
     public void registerL1shareToFederationDeleteL1() {
