@@ -43,6 +43,9 @@ public class ClientFixture {
     @Autowired
     protected PRClient prClient;
 
+	@Autowired
+	protected SMClient smClient;
+
     @Autowired
     protected IAAMClient iaamClient;
 

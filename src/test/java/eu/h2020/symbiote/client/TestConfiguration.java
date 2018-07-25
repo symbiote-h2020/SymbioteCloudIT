@@ -80,6 +80,11 @@ public class TestConfiguration {
     }
 
     @Bean
+    public SMClient smClient(AbstractSymbIoTeClientFactory abstractSymbIoTeClientFactory) {
+        return abstractSymbIoTeClientFactory.getSMClient(platformId);
+    }
+
+    @Bean
     public IAAMClient iaamClient(AbstractSymbIoTeClientFactory abstractSymbIoTeClientFactory) {
         return abstractSymbIoTeClientFactory.getAAMClient(platformId);
     }
