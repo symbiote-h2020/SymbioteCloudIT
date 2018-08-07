@@ -49,25 +49,6 @@ public class RH_IntegrationTests extends ClientFixture {
 	}
 
 	@Test
-	public void testCreatingUser() {
-		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
-
-		UserManagementRequest userManagementRequest = new UserManagementRequest(
-				new Credentials(paamOwnerUsername, paamOwnerPassword), new Credentials(username, password),
-				new UserDetails(new Credentials(username, password), "icom@icom.com", UserRole.USER,
-						AccountStatus.ACTIVE, new HashMap<>(), new HashMap<>(), true, false),
-				OperationType.CREATE);
-
-		try {
-			iaamClient.manageUser(userManagementRequest);
-			log.info("User registration done");
-		} catch (AAMException e) {
-			throw new RuntimeException(e);
-		}
-		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
-	}
-
-	@Test
 	public void testGetAllRegisteredResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 		ResponseEntity<List<CloudResource>> responseEntity = getResources();
