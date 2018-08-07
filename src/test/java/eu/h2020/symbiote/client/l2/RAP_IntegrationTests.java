@@ -4,6 +4,7 @@ import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
 import eu.h2020.symbiote.cloud.model.internal.*;
 import eu.h2020.symbiote.model.cim.Observation;
+import feign.FeignException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -88,14 +89,14 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
+		registerL2Resources(resources);
 
 		//get url
 		String name=defaultSensorResource.getResource().getName();
 		ResponseEntity<FederationSearchResult> query = searchL2Resources(
 				new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
 		);
-		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
+
         String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
         String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
@@ -152,14 +153,13 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
+		registerL2Resources(resources);
 
 		//get url
 		String name=defaultSensorResource.getResource().getName();//getDefaultSensorName();
 		ResponseEntity<FederationSearchResult> query = searchL2Resources(
 		        new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
         );
-		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
         String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
         String url = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
@@ -215,7 +215,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
+		registerL2Resources(resources);
 
 		//get url
 		String name=defaultSensorResource.getResource().getName();//getDefaultSensorName();
@@ -287,14 +287,13 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
+		registerL2Resources(resources);
 
 		//get url
 		String name=defaultActuatorResource.getResource().getName();//getDefaultSensorName();
         ResponseEntity<FederationSearchResult> query = searchL2Resources(
                 new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
         );
-		//String symbioteId=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
 
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 		
@@ -363,7 +362,7 @@ public class RAP_IntegrationTests extends ClientFixture {
 		defaultServiceResource.setFederationInfo(federationInfoBeanService);
 		resources.add(defaultServiceResource);
 
-		ResponseEntity<List<CloudResource>> responseRegister = registerL2Resources(resources);
+		registerL2Resources(resources);
 
 		//get url
 		String name=defaultServiceResource.getResource().getName();//getDefaultSensorName();
@@ -372,7 +371,6 @@ public class RAP_IntegrationTests extends ClientFixture {
         );
 
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
-
 		String body = "[\n" + 
 				"  {\n" + 
 				"      \"inputParam1\" : \"on\"\n" + 
@@ -381,6 +379,45 @@ public class RAP_IntegrationTests extends ClientFixture {
         String response = rapClient.invokeService(url, body, true, homePlatformIds);
         assertThat(response).isEqualTo("some json");
 	}
-	
+
+	@Test
+	public void testGetSensorObservationInDifferentFederation() {
+
+		//register all resource metadata
+		LinkedList<CloudResource> resources = new LinkedList<>();
+		String fedId1="fed1";
+        String fedId2="fed2";
+
+        CloudResource defaultSensorResource = createSensorResource("", "isen1");
+
+        Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
+        ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
+        sharingInformationSensor1.setBartering(false);
+        resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
+        ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
+        sharingInformationSensor2.setBartering(false);
+        resourceSharingInformationMapSensor.put(fedId2, sharingInformationSensor2);
+        FederationInfoBean federationInfoBeanSensor = new FederationInfoBean();
+        federationInfoBeanSensor.setSharingInformation(resourceSharingInformationMapSensor);
+
+		defaultSensorResource.setFederationInfo(federationInfoBeanSensor);
+		resources.add(defaultSensorResource);
+
+		registerL2Resources(resources);
+
+		//get url
+		String name=defaultSensorResource.getResource().getName();
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+				new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+		);
+
+		String url = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId2).getoDataUrl();
+
+		try {
+            rapClient.getLatestObservation(url, true, homePlatformIds);
+        } catch (FeignException e) {
+            assertThat(e.status()).isEqualTo(401);
+        }
+	}
 
 }
