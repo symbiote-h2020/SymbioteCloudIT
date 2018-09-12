@@ -3,6 +3,7 @@ package eu.h2020.symbiote.client.l1;
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.LambdaCondition;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
+import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
@@ -18,6 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -62,6 +64,25 @@ public class Core_IntegrationTests extends ClientFixture {
 	@Test
 	public void testGetUrlForSensor() throws Exception {
         // POST http://localhost:8777/get_resource_url?platformId=xplatform&resourceId=5ab412f14a234e0f916be9bf
+
+		String resourceId = findDefaultSensor().getId();
+		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true, homePlatformIds);
+
+		assertUrlExists(response, resourceId);
+		assertUrlPath(response, resourceId, "/rap/Sensors('" + resourceId + "')");
+	}
+
+	@Test
+	public void testGetUrlForSensorWithNullFilteringPolicies() throws Exception {
+		// POST http://localhost:8777/get_resource_url?platformId=xplatform&resourceId=5ab412f14a234e0f916be9bf
+        clearRegistrationHandlerL1();
+
+        LinkedList<CloudResource> resources = new LinkedList<>();
+        defaultResourceIdPrefix = String.valueOf(System.currentTimeMillis());
+        CloudResource cloudResource = createSensorResource(defaultResourceIdPrefix, "-isen1");
+        cloudResource.setFilteringPolicy(null);
+        resources.add(cloudResource);
+        registerResources(resources, Layer.L1);
 
 		String resourceId = findDefaultSensor().getId();
 		ResourceUrlsResponse response = cramClient.getResourceUrl(resourceId, true, homePlatformIds);

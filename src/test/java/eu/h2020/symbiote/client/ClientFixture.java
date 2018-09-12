@@ -297,7 +297,7 @@ public class ClientFixture {
         return getServiceName(defaultResourceIdPrefix + "-isrid1");
     }
 
-    private ResponseEntity<List<CloudResource>> registerResources(List<CloudResource> resources, Layer layer) {
+    protected ResponseEntity<List<CloudResource>> registerResources(List<CloudResource> resources, Layer layer) {
         // POST localhost:8001/resources
         // Headers: content-type: application/json
         // body array of cloud resources

@@ -1,9 +1,12 @@
 package eu.h2020.symbiote.client.l2;
 
+import eu.h2020.symbiote.client.AbstractSymbIoTeClientFactory;
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
+import eu.h2020.symbiote.client.interfaces.RHClient;
 import eu.h2020.symbiote.cloud.model.internal.*;
 import eu.h2020.symbiote.model.cim.Observation;
+import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import feign.FeignException;
 import org.junit.After;
 import org.junit.Before;
@@ -11,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
@@ -27,7 +31,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 //@DirtiesContext
 public class RAP_IntegrationTests extends ClientFixture {
 	private static Logger log = LoggerFactory.getLogger(RAP_IntegrationTests.class);
-	
+
+	@Autowired
+    private AbstractSymbIoTeClientFactory abstractSymbIoTeClientFactory;
+
 	@Before
 	public void setUp() throws Exception {
 		log.info("JUnit: setup START {}", new RuntimeException().getStackTrace()[0]);
@@ -419,5 +426,96 @@ public class RAP_IntegrationTests extends ClientFixture {
             assertThat(e.status()).isEqualTo(401);
         }
 	}
+
+	@Test
+	public void testGetSensorObservationBartering() throws SecurityHandlerException, InterruptedException {
+
+		// Register a resource in icom-platform and try to access it with mobaas4
+		LinkedList<CloudResource> resources = new LinkedList<>();
+		String fedId1="fed1";
+		String fedId2="fed2";
+
+		CloudResource defaultSensorResource = createSensorResource("", "isen1");
+
+		Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
+		ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
+		sharingInformationSensor1.setBartering(true);
+		resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
+		ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
+		sharingInformationSensor2.setBartering(false);
+		resourceSharingInformationMapSensor.put(fedId2, sharingInformationSensor2);
+		FederationInfoBean federationInfoBeanSensor = new FederationInfoBean();
+		federationInfoBeanSensor.setSharingInformation(resourceSharingInformationMapSensor);
+
+		defaultSensorResource.setFederationInfo(federationInfoBeanSensor);
+		resources.add(defaultSensorResource);
+
+		registerL2Resources(resources);
+
+		//get url
+		String name=defaultSensorResource.getResource().getName();
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+				new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+		);
+
+		String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
+		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
+
+        AbstractSymbIoTeClientFactory.HomePlatformCredentials homePlatformCredentials =
+                new AbstractSymbIoTeClientFactory.HomePlatformCredentials("mobaas4", username, password, clientId);
+        abstractSymbIoTeClientFactory.initializeInHomePlatforms(new HashSet<>(Collections.singletonList(homePlatformCredentials)));
+
+        TimeUnit.SECONDS.sleep(3);
+		Observation response = rapClient.getLatestObservation(url, true, new HashSet<>(Collections.singletonList("mobaas4")));
+
+		assertThat(response.getResourceId()).isEqualTo(resourceId);
+
+	}
+
+    @Test
+    public void testGetSensorObservationBarteringInverse() throws InterruptedException {
+
+        // Register a resource in mobaas4 and try to access it with icom-platform
+        RHClient mobaasRHClient = abstractSymbIoTeClientFactory.getRHClient("mobaas4");
+        mobaasRHClient.removeL2Resources(Collections.singletonList("isen1"));
+
+        LinkedList<CloudResource> resources = new LinkedList<>();
+        String fedId1="fed1";
+        String fedId2="fed2";
+
+        CloudResource defaultSensorResource = createSensorResource("mobaas4-", "isen1");
+
+        Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
+        ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
+        sharingInformationSensor1.setBartering(true);
+        resourceSharingInformationMapSensor.put(fedId1, sharingInformationSensor1);
+        ResourceSharingInformation sharingInformationSensor2 = new ResourceSharingInformation();
+        sharingInformationSensor2.setBartering(false);
+        resourceSharingInformationMapSensor.put(fedId2, sharingInformationSensor2);
+        FederationInfoBean federationInfoBeanSensor = new FederationInfoBean();
+        federationInfoBeanSensor.setSharingInformation(resourceSharingInformationMapSensor);
+
+        defaultSensorResource.setFederationInfo(federationInfoBeanSensor);
+        defaultSensorResource.getResource().setInterworkingServiceURL("https://symbiote-test.ubiwhere.com:443");
+        resources.add(defaultSensorResource);
+
+        mobaasRHClient.addL2Resources(resources);
+
+        //get url
+        TimeUnit.SECONDS.sleep(3);
+        String name = resources.get(0).getResource().getName();
+        ResponseEntity<FederationSearchResult> query = searchL2Resources(
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+        );
+
+        String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
+        String url = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
+
+        Observation response = rapClient.getLatestObservation(url, true, new HashSet<>(Collections.singletonList(platformId)));
+
+        mobaasRHClient.removeL2Resources(Collections.singletonList("isen1"));
+        assertThat(response.getResourceId()).isEqualTo(resourceId);
+
+    }
 
 }
