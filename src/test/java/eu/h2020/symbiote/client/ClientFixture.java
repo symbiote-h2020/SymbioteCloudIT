@@ -177,13 +177,13 @@ public class ClientFixture {
 	    actuator.setName(getActuatorName(timestamp + internalId));
 	    actuator.setDescription(Collections.singletonList("This default actuator with timestamp: " + timestamp + " and iid: " + internalId));
 	    
-	    eu.h2020.symbiote.model.cim.Capability capability = new eu.h2020.symbiote.model.cim.Capability();
+	    Capability capability = new Capability();
 	    actuator.setCapabilities(Collections.singletonList(capability));
 	    
 	    capability.setName("OnOffCapabililty");
 	
 	    // parameters
-	    eu.h2020.symbiote.model.cim.Parameter parameter = new eu.h2020.symbiote.model.cim.Parameter();
+	    Parameter parameter = new Parameter();
 	    capability.setParameters(Collections.singletonList(parameter));
 	    parameter.setName("on");
 	    parameter.setMandatory(true);
