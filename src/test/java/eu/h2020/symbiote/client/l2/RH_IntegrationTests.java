@@ -2,9 +2,7 @@ package eu.h2020.symbiote.client.l2;
 
 import eu.h2020.symbiote.client.ClientFixture;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
-import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.cloud.model.internal.FederationInfoBean;
-import eu.h2020.symbiote.cloud.model.internal.ResourceSharingInformation;
+import eu.h2020.symbiote.cloud.model.internal.*;
 import eu.h2020.symbiote.model.cim.Actuator;
 import eu.h2020.symbiote.model.cim.Sensor;
 import eu.h2020.symbiote.model.cim.Service;
@@ -26,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {SymbioteCloudITApplication.class})
@@ -80,6 +79,43 @@ public class RH_IntegrationTests extends ClientFixture {
 		assertNotNull(returnedResource.getFederationInfo());
         assertNotNull(returnedResource.getFederationInfo().getAggregationId());
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
+	}
+
+	@Test
+	public void testUpdateSensor() {
+		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
+		LinkedList<CloudResource> resources = new LinkedList<>();
+		CloudResource defaultSensorResource = createSensorResource("", "isen1");
+		resources.add(defaultSensorResource);
+
+		ResponseEntity<List<CloudResource>> responseEntity = registerL2Resources(resources);
+		assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+		assertEquals(1, responseEntity.getBody().size());
+
+		CloudResource returnedResource = responseEntity.getBody().get(0);
+		assertEquals(defaultSensorResource.getInternalId(), returnedResource.getInternalId());
+		assertNotNull(returnedResource.getFederationInfo());
+		assertNotNull(returnedResource.getFederationInfo().getAggregationId());
+		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
+
+		List <String> descriptionSensor=returnedResource.getResource().getDescription();
+		String newDescription=" and a newDescription";
+		descriptionSensor.add(newDescription);
+		returnedResource.getResource().setDescription(descriptionSensor);//Collections.singletonList("This is default sensor with timestamp: " + timeStamp + " and iid: " + internalId));
+		List<CloudResource> resourcesToUpdate = new LinkedList<>();
+		resourcesToUpdate.add(returnedResource);
+		List<CloudResource> resourceUpdated = rhClient.updateL2Resources(resourcesToUpdate);
+		assertThat(resourceUpdated.get(0).getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
+		assertThat(resourceUpdated.get(0).getResource().getDescription().contains(newDescription));
+
+		String name=defaultSensorResource.getResource().getName();
+
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(
+				new PlatformRegistryQuery.Builder().descriptions(descriptionSensor).build()
+		);
+		assertThat(query.getBody().getResources().contains(resourceUpdated));
+
+
 	}
 
 	@Test

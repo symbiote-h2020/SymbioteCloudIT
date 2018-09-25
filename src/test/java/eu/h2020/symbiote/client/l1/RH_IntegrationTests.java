@@ -1,8 +1,11 @@
 package eu.h2020.symbiote.client.l1;
 
 import eu.h2020.symbiote.client.ClientFixture;
+import eu.h2020.symbiote.client.LambdaCondition;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.security.commons.enums.AccountStatus;
 import eu.h2020.symbiote.security.commons.enums.OperationType;
 import eu.h2020.symbiote.security.commons.enums.UserRole;
@@ -111,7 +114,8 @@ public class RH_IntegrationTests extends ClientFixture {
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 
 		List <String> descriptionSensor=returnedResource.getResource().getDescription();
-		descriptionSensor.add(" and a newDescription");
+		String newDescription=" and a newDescription";
+		descriptionSensor.add(newDescription);
 
 		returnedResource.getResource().setDescription(descriptionSensor);//Collections.singletonList("This is default sensor with timestamp: " + timeStamp + " and iid: " + internalId));
 
@@ -119,8 +123,11 @@ public class RH_IntegrationTests extends ClientFixture {
 		resourcesToUpdate.add(returnedResource);
 		List<CloudResource> resourceUpdated = rhClient.updateL1Resources(resourcesToUpdate);
 		assertThat(resourceUpdated.get(0).getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
+		assertThat(resourceUpdated.get(0).getResource().getDescription().contains(newDescription));
 
-
+		String name=defaultSensorResource.getResource().getName();
+		QueryResponse query = searchClient.search(new CoreQueryRequest.Builder().description(newDescription).platformId(platformId).build(), true, homePlatformIds);
+		assertThat(query.getResources().contains(resourceUpdated));
 	}
 
 	@Test
