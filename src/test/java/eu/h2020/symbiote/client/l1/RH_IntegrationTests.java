@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -82,7 +83,7 @@ public class RH_IntegrationTests extends ClientFixture {
 		LinkedList<CloudResource> resources = new LinkedList<>();
 		CloudResource defaultSensorResource = createSensorResource("", "isen1");
 		resources.add(defaultSensorResource);
-		
+
 		ResponseEntity<List<CloudResource>> responseEntity = registerL1Resources(resources);
 		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(responseEntity.getBody()).hasSize(1);
@@ -92,7 +93,35 @@ public class RH_IntegrationTests extends ClientFixture {
 		assertThat(returnedResource.getResource().getId()).isNotNull();
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
-	
+
+	@Test
+	public void testUpdateSensor() {
+		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
+		LinkedList<CloudResource> resources = new LinkedList<>();
+		CloudResource defaultSensorResource = createSensorResource("", "isen1");
+		resources.add(defaultSensorResource);
+
+		ResponseEntity<List<CloudResource>> responseEntity = registerL1Resources(resources);
+		assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(responseEntity.getBody()).hasSize(1);
+
+		CloudResource returnedResource = responseEntity.getBody().get(0);
+		assertThat(returnedResource.getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
+		assertThat(returnedResource.getResource().getId()).isNotNull();
+		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
+
+		List <String> descriptionSensor=returnedResource.getResource().getDescription();
+		descriptionSensor.add(" and a newDescription");
+
+		returnedResource.getResource().setDescription(descriptionSensor);//Collections.singletonList("This is default sensor with timestamp: " + timeStamp + " and iid: " + internalId));
+
+		List<CloudResource> resourcesToUpdate = new LinkedList<>();
+		resourcesToUpdate.add(returnedResource);
+		List<CloudResource> resourceUpdated = rhClient.updateL1Resources(resourcesToUpdate);
+		assertThat(resourceUpdated.get(0).getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
+
+
+	}
 
 	@Test
 	public void testRegisterActuator() {
