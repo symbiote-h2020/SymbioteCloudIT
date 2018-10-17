@@ -212,9 +212,12 @@ public class ClientFixture {
 	    cloudResource.setResource(service);
 	    
 	    service.setName(getServiceName(timestamp + internalId));
-	    service.setDescription(Collections.singletonList("Defaut Service for testing with timestamp: " + timestamp + " and iid: " + internalId));
-	    
-	    eu.h2020.symbiote.model.cim.Parameter parameter = new eu.h2020.symbiote.model.cim.Parameter();
+	    //service.setDescription(Collections.singletonList("Defaut Service for testing with timestamp: " + timestamp + " and iid: " + internalId));
+		List<String> descriptionList=Arrays.asList("@type=Beacon","@beacon.id=f7826da6-4fa2-4e98-8024-bc5b71e0893e","@beacon.major=44933","@beacon.minor=46799","@beacon.tx=0x50");
+		service.setDescription(descriptionList);
+
+
+		eu.h2020.symbiote.model.cim.Parameter parameter = new eu.h2020.symbiote.model.cim.Parameter();
 	    service.setParameters(Collections.singletonList(parameter));
 	
 	    parameter.setName("inputParam1");

@@ -62,6 +62,22 @@ public class PR_IntegrationTests extends ClientFixture {
 						getDefaultServiceName());
 	}
 
+	@Test
+	public void testSearchResourcesByDescription() {
+
+		ResponseEntity<FederationSearchResult> query = searchL2Resources(//@type=
+				new PlatformRegistryQuery.Builder().descriptions(Arrays.asList("@type=Beacon")).build()
+		);
+
+		String serviceName=getDefaultServiceName();
+		assertThat(query.getStatusCodeValue()).isEqualTo(200);
+		assertThat(query.getBody().getResources())
+				.filteredOn(new LambdaCondition<>(
+						r -> r.getCloudResource().getResource().getName().contains(defaultResourceIdPrefix)
+				))
+				.extracting("cloudResource.resource.name")
+				.containsOnly(getDefaultServiceName());
+	}
 
 	@Test
 	public void testSearchResources() {
