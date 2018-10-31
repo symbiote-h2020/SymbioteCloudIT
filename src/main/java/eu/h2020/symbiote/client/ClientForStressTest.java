@@ -8,11 +8,13 @@ import eu.h2020.symbiote.model.cim.WGS84Location;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static eu.h2020.symbiote.client.AbstractSymbIoTeClientFactory.*;
 
@@ -50,6 +52,8 @@ public class ClientForStressTest {
         }
 
         sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, 16);
+
+       // deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
 
     }
 
@@ -194,4 +198,46 @@ public class ClientForStressTest {
         }
     }
 
+
+    private static ResponseEntity deleteAllResources(Layer layer, String platformId) {
+        // DELETE localhost:8001/resources?resourceInternalIds=el_isen1,el_iaid1
+
+        HttpEntity requestEntity = new HttpEntity<>(null);
+
+        RHClient rhClient = factory.getRHClient(platformId);
+
+        if (layer == Layer.L1) {
+
+           ResponseEntity<List<CloudResource>> resources = new ResponseEntity<>(rhClient.getResources(), HttpStatus.OK);
+
+            List<String> ids = resources.getBody().stream()
+                    .filter(cloudResource -> cloudResource.getResource().getId() != null)
+                    .map(CloudResource::getInternalId)
+                    .collect(Collectors.toList());
+
+            if (ids.isEmpty())
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+            return new ResponseEntity(rhClient.deleteL1Resources(ids), HttpStatus.OK);
+        } else {
+
+            ResponseEntity<List<CloudResource>> resources = new ResponseEntity<>(rhClient.getResources(), HttpStatus.OK);
+
+            List<String> ids = resources.getBody().stream()
+                    .filter(cloudResource -> cloudResource.getFederationInfo() != null)
+                    .map(CloudResource::getInternalId)
+                    .collect(Collectors.toList());
+
+            if (ids.isEmpty())
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+
+            return new ResponseEntity(rhClient.removeL2Resources(ids), HttpStatus.OK);
+        }
+
+
+    }
+
+    public enum Layer {
+        L1, L2
+    }
 }
