@@ -1,0 +1,197 @@
+package eu.h2020.symbiote.client;
+
+import eu.h2020.symbiote.client.interfaces.RHClient;
+import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import eu.h2020.symbiote.model.cim.FeatureOfInterest;
+import eu.h2020.symbiote.model.cim.StationarySensor;
+import eu.h2020.symbiote.model.cim.WGS84Location;
+import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static eu.h2020.symbiote.client.AbstractSymbIoTeClientFactory.*;
+
+public class ClientForStressTest {
+
+    private static AbstractSymbIoTeClientFactory factory;
+
+    private static Log log = LogFactory.getLog(ClientForStressTest.class);
+
+    public static void main(String[] args) {
+
+        /*
+        Get the factory and the client
+         */
+
+        // FILL ME
+        // mandatory to run
+        String coreAddress = "https://symbiote-dev.man.poznan.pl";
+        String keystorePath = "testKeystore";
+        String keystorePassword = "testKeystore";
+        String exampleHomePlatformIdentifier = "icom-platform";
+
+        Type type = Type.FEIGN;
+
+        // Get the configuration
+        Config config = new Config(coreAddress, keystorePath, keystorePassword, type);
+
+        // Get the factory
+     //   AbstractSymbIoTeClientFactory factory;
+        try {
+            factory = getFactory(config);
+        } catch (SecurityHandlerException | NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, 16);
+
+    }
+
+    public static AbstractSymbIoTeClientFactory getClientFactory() {
+        return factory;
+    }
+
+
+
+    public static ResponseEntity<?> sendRequestAndVerifyResponseRHStress(String homePlatformId, Integer stress) {
+
+        // Start from here
+        List<Callable<QueryHttpResult>> tasks = new ArrayList<>();
+
+        AbstractSymbIoTeClientFactory factory = getClientFactory();
+
+        //populate tasks list
+        for( int i = 0; i < stress.intValue(); i++ ) {
+            tasks.add(new RHQueryCallable("Runner"+i, homePlatformId, factory));
+        }
+
+        ExecutorService executorService = Executors.newFixedThreadPool(stress.intValue());
+
+        long in = System.currentTimeMillis();
+        try {
+
+            // This is the actual test
+            List<Future<QueryHttpResult>> futures = executorService.invokeAll(tasks);
+
+            List<QueryHttpResult> resultList = new ArrayList<>(futures.size());
+
+            // Check for exceptions
+            for (Future<QueryHttpResult> future : futures) {
+                // Throws an exception if an exception was thrown by the task.
+                resultList.add(future.get());
+            }
+
+            long out = System.currentTimeMillis();
+
+            //prepare results
+            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).max();
+            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).min();
+            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).average();
+
+            resultList.stream().forEach(s -> log.debug( "["+ s.getName() + "] finished in " + s.getExecutionTime() + " ms "));
+
+            log.debug("All tasks finished in " + ( out - in ) + " ms | min " + minTimer.orElse(-1l) + " | max "
+                    + maxTimer.orElse(-1l) + " | avg " + avgTimer.orElse( -1.0) );
+
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        return new ResponseEntity<Object>("", HttpStatus.OK);
+    }
+
+    private static class RHQueryCallable implements Callable<QueryHttpResult> {
+
+        private final String name;
+        private final AbstractSymbIoTeClientFactory factory;
+        private final String homePlatformId;
+
+
+        public RHQueryCallable(String name, String homePlatformId, AbstractSymbIoTeClientFactory factory) {
+            this.name = name;
+            this.factory =  factory;
+            this.homePlatformId = homePlatformId;
+        }
+
+        @Override
+        public QueryHttpResult call() throws Exception {
+            log.debug("["+this.name+"] starting");
+
+            RHClient rhClient = factory.getRHClient(homePlatformId);
+
+            CloudResource cloudResource = new CloudResource();
+            cloudResource.setInternalId(this.name);
+
+            //TODO randomize resource here
+            StationarySensor sensor = new StationarySensor();
+            cloudResource.setResource(sensor);
+            Long timeStamp = System.currentTimeMillis();
+            String internalId = cloudResource.getInternalId();
+            sensor.setName(timeStamp + internalId);
+            sensor.setDescription(Collections.singletonList("This is default sensor with timestamp: " + timeStamp + " and iid: " + internalId));
+
+            FeatureOfInterest featureOfInterest = new FeatureOfInterest();
+            sensor.setFeatureOfInterest(featureOfInterest);
+            featureOfInterest.setName("outside air");
+            featureOfInterest.setDescription(Collections.singletonList("outside air quality"));
+            featureOfInterest.setHasProperty(Arrays.asList("temperature,humidity".split(",")));
+
+            sensor.setObservesProperty(Arrays.asList("temperature,humidity".split(",")));
+            sensor.setLocatedAt(new WGS84Location(52.513681, 13.363782, 15,
+                    "Berlin", Collections.singletonList("Grosser Tiergarten")));
+            sensor.setInterworkingServiceURL("https://intracom.symbiote-h2020.eu");
+            /////
+
+            long in = System.currentTimeMillis();
+
+            CloudResource returnedResource = rhClient.addL1Resource(cloudResource);
+
+            long executionTime = (System.currentTimeMillis() - in );
+
+            ResponseEntity<CloudResource> responseEntity = new ResponseEntity(returnedResource, HttpStatus.OK);;
+            if (returnedResource==null)
+                responseEntity= new ResponseEntity(HttpStatus.NO_CONTENT);
+
+            log.debug("["+this.name+"] finished with status " + responseEntity.getStatusCode() + " in "
+                    + executionTime + " ms" );
+
+            return new QueryHttpResult(this.name,responseEntity,executionTime);
+        }
+
+    }
+
+    private static class QueryHttpResult {
+
+        private String name;
+        private final ResponseEntity responseEntity;
+        private final long executionTime;
+
+        public QueryHttpResult(String name, ResponseEntity responseEntity, long executionTime ) {
+            this.name = name;
+            this.responseEntity = responseEntity;
+            this.executionTime = executionTime;
+        }
+
+        public ResponseEntity getResponseEntity() {
+            return responseEntity;
+        }
+
+        public long getExecutionTime() {
+            return executionTime;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+}
