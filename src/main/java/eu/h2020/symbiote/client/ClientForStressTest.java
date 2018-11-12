@@ -11,6 +11,8 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -51,9 +53,10 @@ public class ClientForStressTest {
             return;
         }
 
-        sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, 16);
+        deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
 
-       // deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
+        sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, 10);
+
 
     }
 
@@ -64,6 +67,9 @@ public class ClientForStressTest {
 
 
     public static ResponseEntity<?> sendRequestAndVerifyResponseRHStress(String homePlatformId, Integer stress) {
+
+        String directoryName = "./output";
+        String fileName = directoryName+"/log"+ String.valueOf(System.currentTimeMillis());
 
         // Start from here
         List<Callable<QueryHttpResult>> tasks = new ArrayList<>();
@@ -79,6 +85,12 @@ public class ClientForStressTest {
 
         long in = System.currentTimeMillis();
         try {
+
+            File directory = new File(directoryName);
+            if(!directory.exists())
+                directory.mkdir();
+            File file = new File(fileName);
+            PrintWriter outputFile = new PrintWriter(file);
 
             // This is the actual test
             List<Future<QueryHttpResult>> futures = executorService.invokeAll(tasks);
@@ -98,15 +110,26 @@ public class ClientForStressTest {
             OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).min();
             OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).average();
 
-            resultList.stream().forEach(s -> log.debug( "["+ s.getName() + "] finished in " + s.getExecutionTime() + " ms "));
+            resultList.stream().forEach(s -> {
+                    log.debug( "["+ s.getName() + "] finished in " + s.getExecutionTime() + " ms ");
+                    outputFile.println( "["+ s.getName() + "] " + s.getExecutionTime() + " ms ");
+        }
+            );
 
             log.debug("All tasks finished in " + ( out - in ) + " ms | min " + minTimer.orElse(-1l) + " | max "
                     + maxTimer.orElse(-1l) + " | avg " + avgTimer.orElse( -1.0) );
 
 
+            outputFile.println("All " + ( out - in ) + " ms \nmin " + minTimer.orElse(-1l) + " ms \nmax "
+                    + maxTimer.orElse(-1l) + " ms \navg " + avgTimer.orElse( -1.0) + " ms");
+            outputFile.close();
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
 
