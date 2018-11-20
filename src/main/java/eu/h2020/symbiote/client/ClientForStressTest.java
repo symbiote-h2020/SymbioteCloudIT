@@ -2,9 +2,7 @@ package eu.h2020.symbiote.client;
 
 import eu.h2020.symbiote.client.interfaces.RHClient;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
-import eu.h2020.symbiote.model.cim.FeatureOfInterest;
-import eu.h2020.symbiote.model.cim.StationarySensor;
-import eu.h2020.symbiote.model.cim.WGS84Location;
+import eu.h2020.symbiote.model.cim.*;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -158,25 +156,15 @@ public class ClientForStressTest {
             CloudResource cloudResource = new CloudResource();
             cloudResource.setInternalId(this.name);
 
-            //TODO randomize resource here
-            StationarySensor sensor = new StationarySensor();
-            cloudResource.setResource(sensor);
+            //resource fields randomized
+            Resource resource = new Resource();
+            cloudResource.setResource(resource);
             Long timeStamp = System.currentTimeMillis();
             String internalId = cloudResource.getInternalId();
-            sensor.setName(timeStamp + internalId);
-            sensor.setDescription(Collections.singletonList("This is default sensor with timestamp: " + timeStamp + " and iid: " + internalId));
-
-            FeatureOfInterest featureOfInterest = new FeatureOfInterest();
-            sensor.setFeatureOfInterest(featureOfInterest);
-            featureOfInterest.setName("outside air");
-            featureOfInterest.setDescription(Collections.singletonList("outside air quality"));
-            featureOfInterest.setHasProperty(Arrays.asList("temperature,humidity".split(",")));
-
-            sensor.setObservesProperty(Arrays.asList("temperature,humidity".split(",")));
-            sensor.setLocatedAt(new WGS84Location(52.513681, 13.363782, 15,
-                    "Berlin", Collections.singletonList("Grosser Tiergarten")));
-            sensor.setInterworkingServiceURL("https://intracom.symbiote-h2020.eu");
-            /////
+            resource.setName(timeStamp + internalId);
+            resource.setDescription(Collections.singletonList("outside air quality"));
+            resource.setInterworkingServiceURL("https://intracom.symbiote-h2020.eu");
+            getRandomFields(cloudResource);
 
             long in = System.currentTimeMillis();
 
@@ -192,6 +180,118 @@ public class ClientForStressTest {
                     + executionTime + " ms" );
 
             return new QueryHttpResult(this.name,responseEntity,executionTime);
+        }
+
+
+        private void getRandomFields(CloudResource cloudResource ) {
+            long randomizer = System.currentTimeMillis();
+
+            Resource resource = cloudResource.getResource();
+
+            if( randomizer%5==1 ) {
+                log.debug("Adding temperature, humidity to cloudResource");
+                StationarySensor sensor = new StationarySensor();
+                sensor.setName(resource.getName());
+                sensor.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+                sensor.setDescription(Collections.singletonList("temperature"));
+                FeatureOfInterest featureOfInterest = new FeatureOfInterest();
+                featureOfInterest.setName("outside air");
+                featureOfInterest.setDescription(Collections.singletonList("outside temperature and humidity"));
+                featureOfInterest.setHasProperty(Arrays.asList("temperature,humidity".split(",")));
+                sensor.setObservesProperty(Arrays.asList("temperature,humidity".split(",")));
+                sensor.setLocatedAt(new WGS84Location(2.35, 40.8646, 12,
+                        "Paris", Collections.singletonList("Somewhere in Paris")));
+                cloudResource.setResource(sensor);
+            } else if ( randomizer%5==2) {
+                log.debug("Adding atmosphericPressure, carbonMonoxideConcentration to cloudResource");
+                StationarySensor sensor = new StationarySensor();
+                sensor.setName(resource.getName());
+                sensor.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+                FeatureOfInterest featureOfInterest = new FeatureOfInterest();
+                featureOfInterest.setName("outside air");
+                featureOfInterest.setDescription(Collections.singletonList("outside air quality"));
+                featureOfInterest.setHasProperty(Arrays.asList("atmosphericPressure,carbonMonoxideConcentration".split(",")));
+                sensor.setObservesProperty(Arrays.asList("atmosphericPressure,carbonMonoxideConcentration".split(",")));
+                sensor.setLocatedAt(new WGS84Location(52.513681, 13.363782, 15,
+                                 "Berlin", Collections.singletonList("Grosser Tiergarten")));
+                cloudResource.setResource(sensor);
+
+            } else if (randomizer%5==3) {
+                log.debug("Adding fields to service");
+
+                Service service = new Service();
+                service.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+                service.setName(resource.getName());
+                List<String> descriptionList=Arrays.asList("@type=Beacon","@beacon.id=f7826da6-4fa2-4e98-8024-bc5b71e0893e","@beacon.major=44933","@beacon.minor=46799","@beacon.tx=0x50");
+                service.setDescription(descriptionList);
+                eu.h2020.symbiote.model.cim.Parameter parameter = new eu.h2020.symbiote.model.cim.Parameter();
+                service.setParameters(Collections.singletonList(parameter));
+                parameter.setName("inputParam1");
+                parameter.setMandatory(true);
+                // restriction
+                LengthRestriction restriction = new LengthRestriction();
+                restriction.setMin(2);
+                restriction.setMax(10);
+                parameter.setRestrictions(Collections.singletonList(restriction));
+
+                PrimitiveDatatype datatype = new PrimitiveDatatype();
+                datatype.setArray(false);
+                datatype.setBaseDatatype("http://www.w3.org/2001/XMLSchema#string");
+                parameter.setDatatype(datatype);
+                cloudResource.setResource(service);
+
+            } else if (randomizer%5==0) {
+                log.debug("Adding fields to actuator");
+                Actuator actuator = new Actuator();
+                actuator.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+                actuator.setName(resource.getName());
+                actuator.setDescription(Collections.singletonList("light"));
+                actuator.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+
+                Capability capability = new Capability();
+                actuator.setCapabilities(Collections.singletonList(capability));
+
+                capability.setName("OnOffCapabililty");
+
+                // parameters
+                Parameter parameter = new Parameter();
+                capability.setParameters(Collections.singletonList(parameter));
+                parameter.setName("on");
+                parameter.setMandatory(true);
+                PrimitiveDatatype datatype = new PrimitiveDatatype();
+                parameter.setDatatype(datatype);
+                datatype.setBaseDatatype("boolean");
+                actuator.setLocatedAt(new WGS84Location(2.645, 41.246, 15,
+                        "Paris", Collections.singletonList("Somewhere in Paris")));
+                cloudResource.setResource(actuator);
+            } else if (randomizer%5==4) {
+                log.debug("Adding fields to actuator");
+                Actuator actuator = new Actuator();
+                actuator.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+                actuator.setName(resource.getName());
+                actuator.setDescription(Collections.singletonList("light"));
+                actuator.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+
+                Capability capability = new Capability();
+                actuator.setCapabilities(Collections.singletonList(capability));
+
+                capability.setName("OnOffCapabililty");
+
+                // parameters
+                Parameter parameter = new Parameter();
+                capability.setParameters(Collections.singletonList(parameter));
+                parameter.setName("on");
+                parameter.setMandatory(true);
+                PrimitiveDatatype datatype = new PrimitiveDatatype();
+                parameter.setDatatype(datatype);
+                datatype.setBaseDatatype("boolean");
+                actuator.setLocatedAt(new WGS84Location(52.513681, 13.363782, 15,
+                        "Berlin", Collections.singletonList("Grosser Tiergarten")));
+                cloudResource.setResource(actuator);
+            }
+
+
+
         }
 
     }
