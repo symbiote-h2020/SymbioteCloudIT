@@ -18,11 +18,11 @@ import java.util.stream.Collectors;
 
 import static eu.h2020.symbiote.client.AbstractSymbIoTeClientFactory.*;
 
-public class ClientForStressTest {
+public class RHClientForStressTest {
 
     private static AbstractSymbIoTeClientFactory factory;
 
-    private static Log log = LogFactory.getLog(ClientForStressTest.class);
+    private static Log log = LogFactory.getLog(RHClientForStressTest.class);
 
     public static void main(String[] args) {
 
@@ -53,7 +53,26 @@ public class ClientForStressTest {
 
         deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
 
-        sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, 10);
+
+
+
+        //set parameters for the stress test
+        int runsNumber=1;//number of execution runs
+        int stress = 10;//number of resources to access
+
+        int run=0;
+        //register and access resources periodically
+        while(run<runsNumber) {
+            sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, stress);
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            run++;
+        }
+
+
 
 
     }
@@ -75,8 +94,8 @@ public class ClientForStressTest {
         AbstractSymbIoTeClientFactory factory = getClientFactory();
 
         //populate tasks list
-        for( int i = 0; i < stress.intValue(); i++ ) {
-            tasks.add(new RHQueryCallable("Runner"+i, homePlatformId, factory));
+        for( int i = 0; i < stress; i++ ) {
+            tasks.add(new RHQueryCallable("Runner"+i, homePlatformId, factory));//name is the internalId to be used
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(stress.intValue());
@@ -172,7 +191,7 @@ public class ClientForStressTest {
 
             long executionTime = (System.currentTimeMillis() - in );
 
-            ResponseEntity<CloudResource> responseEntity = new ResponseEntity(returnedResource, HttpStatus.OK);;
+            ResponseEntity<CloudResource> responseEntity = new ResponseEntity(returnedResource, HttpStatus.OK);
             if (returnedResource==null)
                 responseEntity= new ResponseEntity(HttpStatus.NO_CONTENT);
 
