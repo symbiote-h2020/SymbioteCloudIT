@@ -57,13 +57,13 @@ public class RHClientForStressTest {
 
 
         //set parameters for the stress test
-        int runsNumber=1;//number of execution runs
-        int stress = 10;//number of resources to access
+        int runsNumber=10;//number of execution runs
+        int stress = 100;//number of resources to access
 
         int run=0;
         //register and access resources periodically
         while(run<runsNumber) {
-            sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, stress);
+            sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, run, stress);
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -83,10 +83,8 @@ public class RHClientForStressTest {
 
 
 
-    public static ResponseEntity<?> sendRequestAndVerifyResponseRHStress(String homePlatformId, Integer stress) {
+    public static ResponseEntity<?> sendRequestAndVerifyResponseRHStress(String homePlatformId, Integer run, Integer stress) {
 
-        String directoryName = "./output";
-        String fileName = directoryName+"/log"+ String.valueOf(System.currentTimeMillis());
 
         // Start from here
         List<Callable<QueryHttpResult>> tasks = new ArrayList<>();
@@ -95,19 +93,26 @@ public class RHClientForStressTest {
 
         //populate tasks list
         for( int i = 0; i < stress; i++ ) {
-            tasks.add(new RHQueryCallable("Runner"+i, homePlatformId, factory));//name is the internalId to be used
+            tasks.add(new RHQueryCallable("Runner"+run+i, homePlatformId, factory));//name is the internalId to be used
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(stress.intValue());
 
-        long in = System.currentTimeMillis();
+
         try {
+
+
+            String directoryName = "./output";
+            String fileName = directoryName+"/log"+ String.valueOf(System.currentTimeMillis());
 
             File directory = new File(directoryName);
             if(!directory.exists())
                 directory.mkdir();
             File file = new File(fileName);
             PrintWriter outputFile = new PrintWriter(file);
+
+
+            long in = System.currentTimeMillis();
 
             // This is the actual test
             List<Future<QueryHttpResult>> futures = executorService.invokeAll(tasks);
@@ -137,8 +142,8 @@ public class RHClientForStressTest {
                     + maxTimer.orElse(-1l) + " | avg " + avgTimer.orElse( -1.0) );
 
 
-            outputFile.println("All " + ( out - in ) + " ms \nmin " + minTimer.orElse(-1l) + " ms \nmax "
-                    + maxTimer.orElse(-1l) + " ms \navg " + avgTimer.orElse( -1.0) + " ms");
+            outputFile.println("Timestamp " + in + " Number of requests " + stress + " All " + ( out - in ) + " ms min " + minTimer.orElse(-1l) + " ms max "
+                    + maxTimer.orElse(-1l) + " ms avg " + avgTimer.orElse( -1.0) + " ms");
             outputFile.close();
 
         } catch (InterruptedException e) {

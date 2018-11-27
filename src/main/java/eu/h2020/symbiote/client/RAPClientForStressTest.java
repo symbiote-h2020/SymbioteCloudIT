@@ -12,9 +12,13 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsExce
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.http.HttpEntity;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static eu.h2020.symbiote.client.AbstractSymbIoTeClientFactory.*;
 
+@SpringBootApplication
 public class RAPClientForStressTest {
 
     private static AbstractSymbIoTeClientFactory factory;
@@ -37,15 +42,31 @@ public class RAPClientForStressTest {
     static HashMap<String, CloudResource> resourcesPerId = new HashMap<>();
     static List<String> resourceIds = new ArrayList<>();
     static ResourceUrlsResponse resourceUrlsResponse;
-
+    static Boolean authentication;
 
     public static void main(String[] args) {
+        SpringApplication.run(RAPClientForStressTest.class, args);
+    }
+
+    @Component
+    public static class CLR implements CommandLineRunner {
 
 
+        @Override
+        public void run(String... args) throws Exception {
 
+            //message retrieval - start rabbit exchange and consumers
+            startTest();
+        }
+    }
+
+    public static void startTest() {
+
+        log.debug("Starting");
         /*
         Get the factory and the client
          */
+
 
         // FILL ME
         // mandatory to run
@@ -54,6 +75,20 @@ public class RAPClientForStressTest {
         String keystorePassword = "testKeystore";
         String exampleHomePlatformIdentifier = "icom-platform";
 
+        String directoryName = "./output";
+
+        Boolean authentication = false;
+        String testName = authentication.toString();
+
+
+        //set parameters for the stress test
+        int runsNumber=20;//number of execution runs
+        int stress = 10;//100;//number of resources to access
+        int addNumber = 10;
+        resourcesNumber=20;//number of resources to register
+
+        int run=0;
+        //register and access resources periodically
         Type type = Type.FEIGN;
 
         // Get the configuration
@@ -62,6 +97,22 @@ public class RAPClientForStressTest {
         // Get the factory
         try {
             factory = getFactory(config);
+            Set<HomePlatformCredentials> platformCredentials = new HashSet<>();
+
+            // example credentials
+            String username = "user";
+            String password = "user";
+            String clientId = "iliaClient";
+            HomePlatformCredentials exampleHomePlatformCredentials = new HomePlatformCredentials(
+                    exampleHomePlatformIdentifier,
+                    username,
+                    password,
+                    clientId);
+            platformCredentials.add(exampleHomePlatformCredentials);
+
+
+            // Get Certificates for the specified platforms
+            factory.initializeInHomePlatforms(platformCredentials);
 
         } catch (SecurityHandlerException | NoSuchAlgorithmException e) {
             e.printStackTrace();
@@ -70,24 +121,67 @@ public class RAPClientForStressTest {
 
         deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
 
+        RHClient rhClient = factory.getRHClient(exampleHomePlatformIdentifier);
 
-        AbstractSymbIoTeClientFactory factory = getClientFactory();
+        List<String> resourceNames = new ArrayList<>();
 
-        //set parameters for the stress test
-        int runsNumber=1;//number of execution runs
-        int stress = 10;//number of resources to access
-        resourcesNumber=5;//number of resources to register
+        for(int i=0; i< resourcesNumber; i++) {
+            CloudResource cloudResource = new CloudResource();
 
-        int run=0;
-        //register and access resources periodically
-        while(run<runsNumber) {
-            sendRequestAndVerifyResponseRAPStress(exampleHomePlatformIdentifier, stress, factory);
+
+            //resource fields randomized
+            Resource resource = new Resource();
+            cloudResource.setResource(resource);
+            Long timeStamp = System.currentTimeMillis();
+            cloudResource.setInternalId("Runner"+i);
+            String internalId = cloudResource.getInternalId();
+            resource.setName(timeStamp + internalId);
+            resourceNames.add(resource.getName());
+            resource.setDescription(Collections.singletonList("outside air quality"));
+            resource.setInterworkingServiceURL("https://intracom.symbiote-h2020.eu");
+
             try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
+                cloudResource.setAccessPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
+                cloudResource.setFilteringPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
+            } catch (InvalidArgumentsException e) {
                 e.printStackTrace();
             }
+
+            getRandomFields(cloudResource);
+
+            resources.add(cloudResource);
+
+
+        }
+
+        List <CloudResource> returnedResources = rhClient.addL1Resources(resources);
+
+        for(CloudResource returnedResource: returnedResources) {
+            resourceIds.add(returnedResource.getResource().getId());
+            resourcesPerId.put(returnedResource.getResource().getId(), returnedResource);
+        }
+
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        CRAMClient cramClient = factory.getCramClient();
+        resourceUrlsResponse = cramClient.getResourceUrl(new HashSet<> (resourceIds), true, new HashSet<>(Collections.singletonList(exampleHomePlatformIdentifier)));
+
+
+        while(run<runsNumber) {
+            sendRequestAndVerifyResponseRAPStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
+//            try {
+//                Thread.sleep(20000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
             run++;
+
+            stress+=addNumber;
         }
 
 
@@ -99,78 +193,32 @@ public class RAPClientForStressTest {
 
 
 
-    public static ResponseEntity<?> sendRequestAndVerifyResponseRAPStress(String homePlatformId, Integer stress, AbstractSymbIoTeClientFactory factory) {
+    public static ResponseEntity<?> sendRequestAndVerifyResponseRAPStress(String homePlatformId, Integer run, Integer stress,
+                                                                          String directoryName, String testName, AbstractSymbIoTeClientFactory factory, Boolean authentication) {
 
-        String directoryName = "./output";
-        String fileName = directoryName+"/log"+ String.valueOf(System.currentTimeMillis());
+
 
         // Start from here
         List<Callable<RAPQueryHttpResult>> tasks = new ArrayList<>();
 
         //populate tasks list
         for( int i = 0; i < stress; i++ ) {
-            tasks.add(new RAPQueryCallable("Runner"+i, homePlatformId, factory));
+            tasks.add(new RAPQueryCallable("Runner "+run+ "_" +i, homePlatformId, factory));
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(stress.intValue());
 
+
         try {
 
-            File directory = new File(directoryName);
-            if(!directory.exists())
+            String fileName = directoryName + (!testName.isEmpty() ? "/" + testName : "") + "/req_" + stress + "_ts_" + String.valueOf(System.currentTimeMillis());
+
+            File directory = new File(directoryName+ (!testName.isEmpty() ? "/" + testName : ""));
+            if(!directory.exists()) {
                 directory.mkdir();
+            }
             File file = new File(fileName);
             PrintWriter outputFile = new PrintWriter(file);
-
-
-            RHClient rhClient = factory.getRHClient(homePlatformId);
-
-            List<String> resourceNames = new ArrayList<>();
-
-            for(int i=0; i< resourcesNumber; i++) {
-                CloudResource cloudResource = new CloudResource();
-
-
-                //resource fields randomized
-                Resource resource = new Resource();
-                cloudResource.setResource(resource);
-                Long timeStamp = System.currentTimeMillis();
-                cloudResource.setInternalId("Runner"+i);
-                String internalId = cloudResource.getInternalId();
-                resource.setName(timeStamp + internalId);
-                resourceNames.add(resource.getName());
-                resource.setDescription(Collections.singletonList("outside air quality"));
-                resource.setInterworkingServiceURL("https://intracom.symbiote-h2020.eu");
-
-                try {
-                    cloudResource.setAccessPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
-                    cloudResource.setFilteringPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
-                } catch (InvalidArgumentsException e) {
-                    e.printStackTrace();
-                }
-
-                getRandomFields(cloudResource);
-
-                resources.add(cloudResource);
-
-
-            }
-
-            List <CloudResource> returnedResources = rhClient.addL1Resources(resources);
-
-            for(CloudResource returnedResource: returnedResources) {
-                resourceIds.add(returnedResource.getResource().getId());
-                resourcesPerId.put(returnedResource.getResource().getId(), returnedResource);
-            }
-
-            Thread.sleep(10000);
-
-
-            CRAMClient cramClient = factory.getCramClient();
-            resourceUrlsResponse = cramClient.getResourceUrl(new HashSet<> (resourceIds), true, new HashSet<>(Collections.singletonList(homePlatformId)));
-
-            Thread.sleep(10000);
-
 
             long in = System.currentTimeMillis();
 
@@ -191,10 +239,11 @@ public class RAPClientForStressTest {
             OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).max();
             OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).min();
             OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).average();
+            Integer failures = resultList.stream().mapToInt(qRes ->  (qRes.responseEntity.getStatusCode()!= HttpStatus.OK ? 1 : 0)).sum();
 
             resultList.stream().forEach(s -> {
                         log.debug( "["+ s.getName() + "] finished in " + s.getExecutionTime() + " ms ");
-                        outputFile.println( "["+ s.getName() + "] " + s.getExecutionTime() + " ms ");
+                        outputFile.println( s.getName() + " " + s.getExecutionTime());
                     }
             );
 
@@ -202,8 +251,8 @@ public class RAPClientForStressTest {
                     + maxTimer.orElse(-1l) + " | avg " + avgTimer.orElse( -1.0) );
 
 
-            outputFile.println("All " + ( out - in ) + " ms \nmin " + minTimer.orElse(-1l) + " ms \nmax "
-                    + maxTimer.orElse(-1l) + " ms \navg " + avgTimer.orElse( -1.0) + " ms");
+            outputFile.println("Timestamp " + in + "\nRequestsNumber " + stress + "\nFailures_perc" + (100.0*(stress-failures)/(double) stress) + "\nAll_ms " + ( out - in ) + "\nmin_ms " + minTimer.orElse(-1l) + "\nmax_ms "
+                    + maxTimer.orElse(-1l) + "\navg_ms " + avgTimer.orElse( -1.0));
             outputFile.close();
 
         } catch (InterruptedException e) {
@@ -222,10 +271,10 @@ public class RAPClientForStressTest {
     static void getRandomFields(CloudResource cloudResource ) {
         long randomizer = System.currentTimeMillis();
 
-        cloudResource.setPluginId("platform_01");
+        cloudResource.setPluginId("RapPluginExample");
         Resource resource = cloudResource.getResource();
 
-        if( randomizer%5==1 ) {
+        if( randomizer%5==4 ) {
             log.debug("Adding temperature, humidity to cloudResource");
             StationarySensor sensor = new StationarySensor();
             sensor.setName(resource.getName());
@@ -238,13 +287,13 @@ public class RAPClientForStressTest {
             sensor.setObservesProperty(Arrays.asList("temperature,humidity".split(",")));
             sensor.setLocatedAt(new WGS84Location(2.35, 40.8646, 12,
                     "Paris", Collections.singletonList("Somewhere in Paris")));
-            cloudResource.setPluginId("platform_01");
             cloudResource.setResource(sensor);
-        } else if ( randomizer%5==2) {
+        } else if ( randomizer%5==3) {
             log.debug("Adding atmosphericPressure, carbonMonoxideConcentration to cloudResource");
             StationarySensor sensor = new StationarySensor();
             sensor.setName(resource.getName());
             sensor.setInterworkingServiceURL(resource.getInterworkingServiceURL());
+            sensor.setDescription(Collections.singletonList("temperature"));
             FeatureOfInterest featureOfInterest = new FeatureOfInterest();
             featureOfInterest.setName("outside air");
             featureOfInterest.setDescription(Collections.singletonList("outside air quality"));
@@ -252,16 +301,14 @@ public class RAPClientForStressTest {
             sensor.setObservesProperty(Arrays.asList("atmosphericPressure,carbonMonoxideConcentration".split(",")));
             sensor.setLocatedAt(new WGS84Location(52.513681, 13.363782, 15,
                     "Berlin", Collections.singletonList("Grosser Tiergarten")));
-            cloudResource.setPluginId("platform_01");
             cloudResource.setResource(sensor);
-
-        } else if (randomizer%5==3) {
+        } else if ( randomizer%5==2) {
             log.debug("Adding fields to service");
 
             Service service = new Service();
             service.setInterworkingServiceURL(resource.getInterworkingServiceURL());
             service.setName(resource.getName());
-            List<String> descriptionList=Arrays.asList("@type=Beacon","@beacon.id=f7826da6-4fa2-4e98-8024-bc5b71e0893e","@beacon.major=44933","@beacon.minor=46799","@beacon.tx=0x50");
+            List<String> descriptionList = Arrays.asList("@type=Beacon", "@beacon.id=f7826da6-4fa2-4e98-8024-bc5b71e0893e", "@beacon.major=44933", "@beacon.minor=46799", "@beacon.tx=0x50");
             service.setDescription(descriptionList);
             Parameter parameter = new Parameter();
             service.setParameters(Collections.singletonList(parameter));
@@ -279,7 +326,7 @@ public class RAPClientForStressTest {
             parameter.setDatatype(datatype);
             cloudResource.setResource(service);
 
-        } else if (randomizer%5==0) {
+        } else if (randomizer%5==1) {
             log.debug("Adding fields to actuator");
             Actuator actuator = new Actuator();
             actuator.setInterworkingServiceURL(resource.getInterworkingServiceURL());
@@ -303,7 +350,8 @@ public class RAPClientForStressTest {
             actuator.setLocatedAt(new WGS84Location(2.645, 41.246, 15,
                     "Paris", Collections.singletonList("Somewhere in Paris")));
             cloudResource.setResource(actuator);
-        } else if (randomizer%5==4) {
+
+        } else  {
             log.debug("Adding fields to actuator");
             Actuator actuator = new Actuator();
             actuator.setInterworkingServiceURL(resource.getInterworkingServiceURL());
@@ -366,7 +414,7 @@ public class RAPClientForStressTest {
 
             if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Sensor) {
                 in = System.currentTimeMillis();
-                Observation returnedObservation = rapClient.getLatestObservation(resourceUrl, true, new HashSet<>(Collections.singletonList(homePlatformId)));
+                Observation returnedObservation = rapClient.getLatestObservation(resourceUrl, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
                 out=System.currentTimeMillis();
                 if (returnedObservation==null)
                     responseEntity= new ResponseEntity(HttpStatus.NO_CONTENT);
@@ -385,8 +433,9 @@ public class RAPClientForStressTest {
                         "}";
 
                 in = System.currentTimeMillis();
-                rapClient.actuate(resourceUrl, body, true, new HashSet<>(Collections.singletonList(homePlatformId)));
+                rapClient.actuate(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
                 out=System.currentTimeMillis();
+                responseEntity = new ResponseEntity(HttpStatus.OK);
 
             }
             else
@@ -400,7 +449,9 @@ public class RAPClientForStressTest {
 
 
                 in = System.currentTimeMillis();
-                String response = rapClient.invokeService(resourceUrl, body, true, new HashSet<>(Collections.singletonList(homePlatformId)));
+                String response = rapClient.invokeService(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
+//                String response = rapClient.invokeService(resourceUrl, body, true, new HashSet<>(Collections.singletonList(homePlatformId)));
+//                String response = rapClient.invokeServiceAsGuest(resourceUrl, body, true);
                 out=System.currentTimeMillis();
 
                 responseEntity = new ResponseEntity(response, HttpStatus.OK);

@@ -33,7 +33,7 @@ public class LoggingInterceptor implements ClientHttpRequestInterceptor {
         log.debug("Method      : {}", request.getMethod());
         log.debug("*** Headers     : \n");
         for(Entry<String, List<String>> entry: request.getHeaders().entrySet()) {
-           log.debug("{}: {}", entry.getKey(), entry.getValue()); 
+           log.debug("{}: {}", entry.getKey(), entry.getValue());
         }
         try {
             log.debug("*** Request body: {}", new String(body, "UTF-8"));
@@ -50,7 +50,7 @@ public class LoggingInterceptor implements ClientHttpRequestInterceptor {
             log.debug("Status text  : {}", response.getStatusText());
             log.debug("*** Headers      : \n");
             for(Entry<String, List<String>> entry: response.getHeaders().entrySet()) {
-                log.debug("{}: {}", entry.getKey(), entry.getValue()); 
+                log.debug("{}: {}", entry.getKey(), entry.getValue());
              }
             log.debug("*** Response body: {}", IOUtils.toString(response.getBody()));
         } catch (IOException e) {

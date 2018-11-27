@@ -32,12 +32,12 @@ public class SymbioteCloudITApplication {
     @Bean
     public RestTemplate RestTemplate(LoggingInterceptor loggingInterceptor) {
         RestTemplate restTemplate = new RestTemplate();
-        
+
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         BufferingClientHttpRequestFactory bufferingClientHttpRequestFactory = new BufferingClientHttpRequestFactory(requestFactory);
         requestFactory.setOutputStreaming(false);
         restTemplate.setRequestFactory(bufferingClientHttpRequestFactory);
-        
+
         restTemplate.setInterceptors(Arrays.asList(loggingInterceptor));
         return restTemplate;
     }
