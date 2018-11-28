@@ -1,13 +1,17 @@
 package eu.h2020.symbiote.client;
 
+import eu.h2020.symbiote.client.interfaces.IStressTest;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
@@ -40,5 +44,23 @@ public class SymbioteCloudITApplication {
 
         restTemplate.setInterceptors(Arrays.asList(loggingInterceptor));
         return restTemplate;
+    }
+
+    @Component
+    public static class StressTest implements CommandLineRunner {
+
+        private IStressTest stressTest;
+
+        @Autowired
+        public StressTest(IStressTest stressTest) {
+            this.stressTest = stressTest;
+        }
+
+        @Override
+        public void run(String... args) throws Exception {
+
+            //message retrieval - start rabbit exchange and consumers
+            stressTest.test();
+        }
     }
 }

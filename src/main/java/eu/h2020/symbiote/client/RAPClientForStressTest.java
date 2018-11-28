@@ -1,6 +1,7 @@
 package eu.h2020.symbiote.client;
 
 import eu.h2020.symbiote.client.interfaces.CRAMClient;
+import eu.h2020.symbiote.client.interfaces.IStressTest;
 import eu.h2020.symbiote.client.interfaces.RAPClient;
 import eu.h2020.symbiote.client.interfaces.RHClient;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
@@ -12,9 +13,7 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsExce
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -29,8 +28,9 @@ import java.util.stream.Collectors;
 
 import static eu.h2020.symbiote.client.AbstractSymbIoTeClientFactory.*;
 
-@SpringBootApplication
-public class RAPClientForStressTest {
+@Profile("rap")
+@Component
+public class RAPClientForStressTest implements IStressTest {
 
     private static AbstractSymbIoTeClientFactory factory;
 
@@ -43,23 +43,7 @@ public class RAPClientForStressTest {
     static ResourceUrlsResponse resourceUrlsResponse;
     static Boolean authentication;
 
-    public static void main(String[] args) {
-        SpringApplication.run(RAPClientForStressTest.class, args);
-    }
-
-    @Component
-    public static class CLR implements CommandLineRunner {
-
-
-        @Override
-        public void run(String... args) throws Exception {
-
-            //message retrieval - start rabbit exchange and consumers
-            startTest();
-        }
-    }
-
-    public static void startTest() {
+    public void test() {
 
         log.debug("Starting");
         /*
@@ -77,12 +61,12 @@ public class RAPClientForStressTest {
         String directoryName = "./output";
 
         Boolean authentication = false;
-        String testName = authentication.toString();
+        String testName = "rap_" + authentication.toString();
 
 
         //set parameters for the stress test
-        int runsNumber=20;//number of execution runs
-        int stress = 10;//100;//number of resources to access
+        int runsNumber=1;//20;//number of execution runs
+        int stress = 1;//10;//100;//number of resources to access
         int addNumber = 10;
         resourcesNumber=20;//number of resources to register
 
@@ -205,7 +189,7 @@ public class RAPClientForStressTest {
             tasks.add(new RAPQueryCallable("Runner "+run+ "_" +i, homePlatformId, authentication, factory));
         }
 
-        ExecutorService executorService = Executors.newFixedThreadPool(stress.intValue());
+        ExecutorService executorService = Executors.newFixedThreadPool(stress);
 
 
         try {
