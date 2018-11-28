@@ -13,7 +13,6 @@ import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerExcep
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
@@ -203,7 +202,7 @@ public class RAPClientForStressTest {
 
         //populate tasks list
         for( int i = 0; i < stress; i++ ) {
-            tasks.add(new RAPQueryCallable("Runner "+run+ "_" +i, homePlatformId, factory));
+            tasks.add(new RAPQueryCallable("Runner "+run+ "_" +i, homePlatformId, authentication, factory));
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(stress.intValue());
@@ -236,10 +235,14 @@ public class RAPClientForStressTest {
             long out = System.currentTimeMillis();
 
             //prepare results
-            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).max();
-            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).min();
-            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).average();
-            Integer failures = resultList.stream().mapToInt(qRes ->  (qRes.responseEntity.getStatusCode()!= HttpStatus.OK ? 1 : 0)).sum();
+            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).max();
+            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).min();
+            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).average();
+            Integer failures = resultList.stream().mapToInt(qRes ->  (qRes.responseEntity.getStatusCode().is2xxSuccessful() ? 0 : 1)).sum();
+//            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> (qRes.responseEntity.getStatusCode().is2xxSuccessful() ? qRes.getExecutionTime() : null)).filter(Objects::nonNull).max();//filter(time -> time>0)
+//            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> (qRes.responseEntity.getStatusCode().is2xxSuccessful() ? qRes.getExecutionTime() : null)).filter(Objects::nonNull).min();
+//            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> (qRes.responseEntity.getStatusCode().is2xxSuccessful() ? qRes.getExecutionTime() : null)).filter(Objects::nonNull).average();
+
 
             resultList.stream().forEach(s -> {
                         log.debug( "["+ s.getName() + "] finished in " + s.getExecutionTime() + " ms ");
@@ -251,7 +254,7 @@ public class RAPClientForStressTest {
                     + maxTimer.orElse(-1l) + " | avg " + avgTimer.orElse( -1.0) );
 
 
-            outputFile.println("Timestamp " + in + "\nRequestsNumber " + stress + "\nFailures_perc" + (100.0*(stress-failures)/(double) stress) + "\nAll_ms " + ( out - in ) + "\nmin_ms " + minTimer.orElse(-1l) + "\nmax_ms "
+            outputFile.println("Timestamp " + in + "\nRequestsNumber " + stress + "\nFailures_perc " + (100.00*(failures)/(double) stress) + "\nAll_ms " + ( out - in ) + "\nmin_ms " + minTimer.orElse(-1l) + "\nmax_ms "
                     + maxTimer.orElse(-1l) + "\navg_ms " + avgTimer.orElse( -1.0));
             outputFile.close();
 
@@ -262,6 +265,8 @@ public class RAPClientForStressTest {
         }
         catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            executorService.shutdown();
         }
 
         return new ResponseEntity<Object>("", HttpStatus.OK);
@@ -387,12 +392,14 @@ public class RAPClientForStressTest {
         private final String name;
         private final AbstractSymbIoTeClientFactory factory;
         private final String homePlatformId;
+        private final boolean authentication;
 
 
-        public RAPQueryCallable(String name, String homePlatformId, AbstractSymbIoTeClientFactory factory) {
+        public RAPQueryCallable(String name, String homePlatformId, boolean authentication, AbstractSymbIoTeClientFactory factory) {
             this.name = name;
             this.factory =  factory;
             this.homePlatformId = homePlatformId;
+            this.authentication = authentication;
         }
 
         @Override
@@ -412,56 +419,53 @@ public class RAPClientForStressTest {
             long in = System.currentTimeMillis();
             long out=System.currentTimeMillis();
 
-            if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Sensor) {
-                in = System.currentTimeMillis();
-                Observation returnedObservation = rapClient.getLatestObservation(resourceUrl, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
-                out=System.currentTimeMillis();
-                if (returnedObservation==null)
-                    responseEntity= new ResponseEntity(HttpStatus.NO_CONTENT);
-                else
-                    responseEntity = new ResponseEntity(returnedObservation, HttpStatus.OK);
-            }
-            else
-            if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Actuator) {
+            try {
+                if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Sensor) {
+                    in = System.currentTimeMillis();
+                    Observation returnedObservation = rapClient.getLatestObservation(resourceUrl, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
+                    out = System.currentTimeMillis();
+                    if (returnedObservation == null)
+                        responseEntity = new ResponseEntity(HttpStatus.NO_CONTENT);
+                    else
+                        responseEntity = new ResponseEntity(returnedObservation, HttpStatus.OK);
+                } else if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Actuator) {
 
-                String body = "{\n" +
-                        "  \"OnOffCapability\" : [\n" +
-                        "    {\n" +
-                        "      \"on\" : true\n" +
-                        "    }\n" +
-                        "  ]\n" +
-                        "}";
+                    String body = "{\n" +
+                            "  \"OnOffCapability\" : [\n" +
+                            "    {\n" +
+                            "      \"on\" : true\n" +
+                            "    }\n" +
+                            "  ]\n" +
+                            "}";
 
-                in = System.currentTimeMillis();
-                rapClient.actuate(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
-                out=System.currentTimeMillis();
-                responseEntity = new ResponseEntity(HttpStatus.OK);
+                    in = System.currentTimeMillis();
+                    rapClient.actuate(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
+                    out = System.currentTimeMillis();
+                    responseEntity = new ResponseEntity(HttpStatus.OK);
 
-            }
-            else
-            if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Service) {
+                } else if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Service) {
 
-                String body = "[\n" +
-                        "  {\n" +
-                        "      \"inputParam1\" : \"on\"\n" +
-                        "  }\n" +
-                        "]";
+                    String body = "[\n" +
+                            "  {\n" +
+                            "      \"inputParam1\" : \"on\"\n" +
+                            "  }\n" +
+                            "]";
 
 
-                in = System.currentTimeMillis();
-                String response = rapClient.invokeService(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
+                    in = System.currentTimeMillis();
+                    String response = rapClient.invokeService(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
 //                String response = rapClient.invokeService(resourceUrl, body, true, new HashSet<>(Collections.singletonList(homePlatformId)));
 //                String response = rapClient.invokeServiceAsGuest(resourceUrl, body, true);
-                out=System.currentTimeMillis();
+                    out = System.currentTimeMillis();
 
-                responseEntity = new ResponseEntity(response, HttpStatus.OK);
+                    responseEntity = new ResponseEntity(response, HttpStatus.OK);
+                }
+            } catch (Throwable t) {
+                log.warn("Throwable", t);
+                responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
-
             long executionTime = (out - in );
-
-
-
 
             log.debug("["+this.name+"] finished with status " + responseEntity.getStatusCode() + " in "
                     + executionTime + " ms" );
