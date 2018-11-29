@@ -64,15 +64,15 @@ public class RAPClientForStressTest implements IStressTest {
 
         String directoryName = "./output";
 
-        Boolean authentication = false;
+        Boolean authentication = true;
         String testName = "exp_rap_" + authentication.toString();
 
 
         //set parameters for the stress test
-        int runsNumber=150;//number of execution runs
-        int stress = 1;//10;//number of resources to access
-        int addNumber = 1;//10;
-        int experimentRounds = 20; //repeat experiment for specific run 10 times
+        int runsNumber=20;//100;//number of execution runs for periodical execution
+        int stress = 10;//1;////number of resources to access
+        int addNumber = 10;//1;
+        int experimentRounds = 10;//20; //repeat experiment for specific run 10 times
         resourcesNumber=10;//number of resources to register
 
         int run=0;
@@ -189,11 +189,11 @@ public class RAPClientForStressTest implements IStressTest {
             run++;
 
             stress+=addNumber;
-//            try {
-//                Thread.sleep(30000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            try {
+                Thread.sleep(60000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
 
