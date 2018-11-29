@@ -19,9 +19,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -43,6 +45,8 @@ public class RAPClientForStressTest implements IStressTest {
     static ResourceUrlsResponse resourceUrlsResponse;
     static Boolean authentication;
 
+    static PrintWriter outputFileStats = null;
+
     public void test() {
 
         log.debug("Starting");
@@ -61,14 +65,15 @@ public class RAPClientForStressTest implements IStressTest {
         String directoryName = "./output";
 
         Boolean authentication = false;
-        String testName = "rap_" + authentication.toString();
+        String testName = "exp_rap_" + authentication.toString();
 
 
         //set parameters for the stress test
-        int runsNumber=1;//20;//number of execution runs
-        int stress = 1;//10;//100;//number of resources to access
-        int addNumber = 10;
-        resourcesNumber=20;//number of resources to register
+        int runsNumber=150;//number of execution runs
+        int stress = 1;//10;//number of resources to access
+        int addNumber = 1;//10;
+        int experimentRounds = 20; //repeat experiment for specific run 10 times
+        resourcesNumber=10;//number of resources to register
 
         int run=0;
         //register and access resources periodically
@@ -146,7 +151,7 @@ public class RAPClientForStressTest implements IStressTest {
 
 
         try {
-            Thread.sleep(10000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -155,19 +160,44 @@ public class RAPClientForStressTest implements IStressTest {
         resourceUrlsResponse = cramClient.getResourceUrl(new HashSet<> (resourceIds), true, new HashSet<>(Collections.singletonList(exampleHomePlatformIdentifier)));
 
 
+
+
+        String fileNameStats = directoryName + (!testName.isEmpty() ? "/" + testName : "") + "/stats";
+
+        File directoryStats = new File(directoryName+ (!testName.isEmpty() ? "/" + testName : ""));
+        if(!directoryStats.exists()) {
+            directoryStats.mkdir();
+        }
+        File fileStats = new File(fileNameStats);
+
+
+        try {
+            outputFileStats = new PrintWriter(fileStats);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        outputFileStats.append( "timestamp" + "\t" + "milliseconds" + "\t" + "requestsNumber" + "\t" + "Failures" + "\t" + "All_ms" + "\t" +  "min_ms"  + "\t"
+                +  "max_ms"  + "\t" +  "avg_ms\n");
+       // System.out.println("directory " + directoryName +  " filenNameStats " +fileNameStats);
+
+
         while(run<runsNumber) {
-            sendRequestAndVerifyResponseRAPStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
-//            try {
-//                Thread.sleep(20000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            for (int i=0; i<experimentRounds; i++) {
+                sendRequestAndVerifyResponseRAPStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
+            }
             run++;
 
             stress+=addNumber;
+//            try {
+//                Thread.sleep(30000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
         }
 
 
+        outputFileStats.close();
     }
 
     public static AbstractSymbIoTeClientFactory getClientFactory() {
@@ -241,6 +271,12 @@ public class RAPClientForStressTest implements IStressTest {
             outputFile.println("Timestamp " + in + "\nRequestsNumber " + stress + "\nFailures_perc " + (100.00*(failures)/(double) stress) + "\nAll_ms " + ( out - in ) + "\nmin_ms " + minTimer.orElse(-1l) + "\nmax_ms "
                     + maxTimer.orElse(-1l) + "\navg_ms " + avgTimer.orElse( -1.0));
             outputFile.close();
+
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
+            outputFileStats.append( formatter.format(in) + "\t" + in + "\t" + stress + "\t" + (100.00*(failures)/(double) stress) + "\t" + ( out - in ) + "\t" + minTimer.orElse(-1l) + "\t"
+                    + maxTimer.orElse(-1l) + "\t" + avgTimer.orElse( -1.0)+ "\n");
+
 
         } catch (InterruptedException e) {
             e.printStackTrace();

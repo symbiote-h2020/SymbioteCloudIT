@@ -74,8 +74,6 @@ public class RHClientForStressTest implements IStressTest {
         deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
 
 
-        System.out.println("\n\n\n run is " + run + " \n\n\n");
-
         //register and access resources periodically
         while(run<runsNumber) {
             sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName);
@@ -119,17 +117,6 @@ public class RHClientForStressTest implements IStressTest {
 
         try {
 
-
-//            String directoryName = "./output";
-//            String fileName = directoryName+"/log"+ String.valueOf(System.currentTimeMillis());
-//
-//            File directory = new File(directoryName);
-//            if(!directory.exists())
-//                directory.mkdir();
-//            File file = new File(fileName);
-//            PrintWriter outputFile = new PrintWriter(file);
-
-            System.out.println("stress is " +  stress);
             String fileName = directoryName + (!testName.isEmpty() ? "/" + testName : "") + "/req_" + stress + "_ts_" + String.valueOf(System.currentTimeMillis());
 
             File directory = new File(directoryName+ (!testName.isEmpty() ? "/" + testName : ""));
@@ -156,12 +143,12 @@ public class RHClientForStressTest implements IStressTest {
             long out = System.currentTimeMillis();
 
             //prepare results
-            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).max();
-            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).min();
-            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).average();
-//            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).max();
-//            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).min();
-//            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).average();
+//            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).max();
+//            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).min();
+//            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).average();
+            OptionalLong maxTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).max();
+            OptionalLong minTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).min();
+            OptionalDouble avgTimer = resultList.stream().mapToLong(qRes -> qRes.getExecutionTime()).filter(time -> time>0).average();
             Integer failures = resultList.stream().mapToInt(qRes ->  (qRes.responseEntity.getStatusCode().is2xxSuccessful() ? 0 : 1)).sum();
 
             resultList.stream().forEach(s -> {
