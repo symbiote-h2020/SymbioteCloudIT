@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +32,8 @@ public class RHClientForStressTest implements IStressTest {
 
     private static Log log = LogFactory.getLog(RHClientForStressTest.class);
 
+    static PrintWriter outputFileStats = null;
+
     public void test() {
 
         /*
@@ -39,7 +42,7 @@ public class RHClientForStressTest implements IStressTest {
 
         // FILL ME
         // mandatory to run
-        String coreAddress = "https://symbiote-dev.man.poznan.pl";
+        String coreAddress = "https://symbiote-ext.man.poznan.pl";
         String keystorePath = "testKeystore";
         String keystorePassword = "testKeystore";
         String exampleHomePlatformIdentifier = "icom-platform";
@@ -47,15 +50,19 @@ public class RHClientForStressTest implements IStressTest {
 
         String directoryName = "./output";
 
-        Boolean authentication = false;
-        String testName = "rh_" + authentication.toString();
+      //  Boolean authentication = false;
+        String testName = "rh_add5_repeat10";// + authentication.toString();
 
         //set parameters for the stress test
-        int runsNumber=1;//number of execution runs
+        int runsNumber=10;//number of execution runs
         int stress = 5;//number of resources to access
-        int addNumber = 0;//10;
+        int addNumber = 5;//10;
+
+        int experimentRounds = 10;//20; //repeat experiment for specific run 10 times
 
         int run=0;
+
+
 
         Type type = Type.FEIGN;
 
@@ -75,17 +82,58 @@ public class RHClientForStressTest implements IStressTest {
 
 
         //register and access resources periodically
-        while(run<runsNumber) {
-            sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName);
+//        while(run<runsNumber) {
+//            sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName);
 //            try {
-//                Thread.sleep(10000);
+//                Thread.sleep(60000);
 //            } catch (InterruptedException e) {
 //                e.printStackTrace();
 //            }
+//            run++;
+//
+//          //  stress+=addNumber;
+//        }
+
+
+
+        String fileNameStats = directoryName + (!testName.isEmpty() ? "/" + testName : "") + "/stats";
+
+        File directoryStats = new File(directoryName+ (!testName.isEmpty() ? "/" + testName : ""));
+        if(!directoryStats.exists()) {
+            directoryStats.mkdir();
+        }
+        File fileStats = new File(fileNameStats);
+
+
+        try {
+            outputFileStats = new PrintWriter(fileStats);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        outputFileStats.append( "timestamp" + "\t" + "milliseconds" + "\t" + "requestsNumber" + "\t" + "Failures" + "\t" + "All_ms" + "\t" +  "min_ms"  + "\t"
+                +  "max_ms"  + "\t" +  "avg_ms\n");
+        // System.out.println("directory " + directoryName +  " filenNameStats " +fileNameStats);
+
+
+        while(run<runsNumber) {
+            for (int i=0; i<experimentRounds; i++) {
+                sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName);
+                // sendRequestAndVerifyResponseRAPStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
+            }
             run++;
 
-          //  stress+=addNumber;
+            stress+=addNumber;
+
+            try {
+                Thread.sleep(60000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+
+        outputFileStats.close();
 
 
 
@@ -237,8 +285,8 @@ public class RHClientForStressTest implements IStressTest {
 
 
         private void getRandomFields(CloudResource cloudResource ) {
-            long randomizer = System.currentTimeMillis();
-
+            //long randomizer = System.currentTimeMillis();
+            int randomizer = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
             cloudResource.setPluginId("RapPluginExample");
             Resource resource = cloudResource.getResource();
 

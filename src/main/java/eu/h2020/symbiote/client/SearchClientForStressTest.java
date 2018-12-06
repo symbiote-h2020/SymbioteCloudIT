@@ -1,10 +1,9 @@
 package eu.h2020.symbiote.client;
 
-import eu.h2020.symbiote.client.interfaces.CRAMClient;
-import eu.h2020.symbiote.client.interfaces.IStressTest;
-import eu.h2020.symbiote.client.interfaces.RAPClient;
-import eu.h2020.symbiote.client.interfaces.RHClient;
+import eu.h2020.symbiote.client.interfaces.*;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
+import eu.h2020.symbiote.core.ci.QueryResponse;
+import eu.h2020.symbiote.core.internal.CoreQueryRequest;
 import eu.h2020.symbiote.core.internal.cram.ResourceUrlsResponse;
 import eu.h2020.symbiote.model.cim.*;
 import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
@@ -30,13 +29,13 @@ import java.util.stream.Collectors;
 
 import static eu.h2020.symbiote.client.AbstractSymbIoTeClientFactory.*;
 
-@Profile("rap")
+@Profile("search")
 @Component
-public class RAPClientForStressTest implements IStressTest {
+public class SearchClientForStressTest implements IStressTest {
 
     private static AbstractSymbIoTeClientFactory factory;
 
-    private static Log log = LogFactory.getLog(RAPClientForStressTest.class);
+    private static Log log = LogFactory.getLog(SearchClientForStressTest.class);
 
     static int resourcesNumber;
     static List<CloudResource> resources = new ArrayList<>();
@@ -65,7 +64,7 @@ public class RAPClientForStressTest implements IStressTest {
         String directoryName = "./output";
 
         Boolean authentication = false;
-        String testName = "rap_add5_repeat10" + authentication.toString();
+        String testName = "search_add5_repeat10" + authentication.toString();
 
 
         //set parameters for the stress test
@@ -183,8 +182,17 @@ public class RAPClientForStressTest implements IStressTest {
 
 
         while(run<runsNumber) {
+
+
+
+
+
+
+
+
+
             for (int i=0; i<experimentRounds; i++) {
-                sendRequestAndVerifyResponseRAPStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
+                sendRequestAndVerifyResponseSearchStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
             }
             run++;
 
@@ -206,17 +214,17 @@ public class RAPClientForStressTest implements IStressTest {
 
 
 
-    public static ResponseEntity<?> sendRequestAndVerifyResponseRAPStress(String homePlatformId, Integer run, Integer stress,
+    public static ResponseEntity<?> sendRequestAndVerifyResponseSearchStress(String homePlatformId, Integer run, Integer stress,
                                                                           String directoryName, String testName, AbstractSymbIoTeClientFactory factory, Boolean authentication) {
 
 
 
         // Start from here
-        List<Callable<RAPQueryHttpResult>> tasks = new ArrayList<>();
+        List<Callable<SearchQueryHttpResult>> tasks = new ArrayList<>();
 
         //populate tasks list
         for( int i = 0; i < stress; i++ ) {
-            tasks.add(new RAPQueryCallable("Runner "+run+ "_" +i, homePlatformId, authentication, factory));
+            tasks.add(new SearchQueryCallable("Runner "+run+ "_" +i, homePlatformId, authentication, factory));
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(stress);
@@ -236,12 +244,12 @@ public class RAPClientForStressTest implements IStressTest {
             long in = System.currentTimeMillis();
 
             // This is the actual test
-            List<Future<RAPQueryHttpResult>> futures = executorService.invokeAll(tasks);
+            List<Future<SearchQueryHttpResult>> futures = executorService.invokeAll(tasks);
 
-            List<RAPQueryHttpResult> resultList = new ArrayList<>(futures.size());
+            List<SearchQueryHttpResult> resultList = new ArrayList<>(futures.size());
 
             // Check for exceptions
-            for (Future<RAPQueryHttpResult> future : futures) {
+            for (Future<SearchQueryHttpResult> future : futures) {
                 // Throws an exception if an exception was thrown by the task.
                 resultList.add(future.get());
             }
@@ -295,8 +303,8 @@ public class RAPClientForStressTest implements IStressTest {
 
     static void getRandomFields(CloudResource cloudResource ) {
        // long randomizer = System.currentTimeMillis();
-
         int randomizer = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+
         cloudResource.setPluginId("RapPluginExample");
         Resource resource = cloudResource.getResource();
 
@@ -408,7 +416,7 @@ public class RAPClientForStressTest implements IStressTest {
     }
 
 
-    private static class RAPQueryCallable implements Callable<RAPQueryHttpResult> {
+    private static class SearchQueryCallable implements Callable<SearchQueryHttpResult> {
 
         private final String name;
         private final AbstractSymbIoTeClientFactory factory;
@@ -416,7 +424,7 @@ public class RAPClientForStressTest implements IStressTest {
         private final boolean authentication;
 
 
-        public RAPQueryCallable(String name, String homePlatformId, boolean authentication, AbstractSymbIoTeClientFactory factory) {
+        public SearchQueryCallable(String name, String homePlatformId, boolean authentication, AbstractSymbIoTeClientFactory factory) {
             this.name = name;
             this.factory =  factory;
             this.homePlatformId = homePlatformId;
@@ -424,63 +432,53 @@ public class RAPClientForStressTest implements IStressTest {
         }
 
         @Override
-        public RAPQueryHttpResult call() throws Exception {
+        public SearchQueryHttpResult call() throws Exception {
             log.debug("["+this.name+"] starting");
 
-            RAPClient rapClient = factory.getRapClient();
+            SearchClient searchClient = factory.getSearchClient();
 
+            CoreQueryRequest q = new CoreQueryRequest();
+
+            //long randomizer = System.currentTimeMillis();
             int randomizer = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+            q.setPlatform_id("homePlatformId");
+            if( randomizer%5==1 ) {
+                log.debug("Adding temperature to query and resource type stationarysensor");
+                q.setObserved_property(Arrays.asList("temperature"));
+                q.setDescription("temperature");
+                q.setResource_type("StationarySensor");
+            } else if ( randomizer%5==2) {
+                log.debug("Adding humidity to query");
+                q.setObserved_property(Arrays.asList("humidity"));
+                q.setShould_rank(Boolean.TRUE);
+            } else if (randomizer%5==3) {
+                log.debug("Adding resource_type Actuator");
+                q.setResource_type("Actuator");
+                q.setShould_rank(Boolean.FALSE);
+            } else if (randomizer%5==3) {
+                log.debug("Adding location name Paris and resource type StationarySensor");
+                q.setResource_type("StationarySensor");
+                q.setLocation_name("Paris");
+            } else {
+                log.debug("Adding resource_type Service");
+                q.setResource_type("Service");
+            }
 
-            int resourceId = randomizer%resourcesNumber;
-            String resourceUrl = resourceUrlsResponse.getBody().get(resourceIds.get(resourceId));
 
-
-            ResponseEntity<CloudResource> responseEntity = new ResponseEntity(HttpStatus.OK);
+            ResponseEntity<QueryResponse> responseEntity = new ResponseEntity(HttpStatus.OK);
 
             long in = System.currentTimeMillis();
             long out=System.currentTimeMillis();
 
             try {
-                if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Sensor) {
-                    in = System.currentTimeMillis();
-                    Observation returnedObservation = rapClient.getLatestObservation(resourceUrl, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
-                    out = System.currentTimeMillis();
-                    if (returnedObservation == null)
-                        responseEntity = new ResponseEntity(HttpStatus.NO_CONTENT);
-                    else
-                        responseEntity = new ResponseEntity(returnedObservation, HttpStatus.OK);
-                } else if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Actuator) {
 
-                    String body = "{\n" +
-                            "  \"OnOffCapability\" : [\n" +
-                            "    {\n" +
-                            "      \"on\" : true\n" +
-                            "    }\n" +
-                            "  ]\n" +
-                            "}";
+                in = System.currentTimeMillis();
 
-                    in = System.currentTimeMillis();
-                    rapClient.actuate(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
-                    out = System.currentTimeMillis();
-                    responseEntity = new ResponseEntity(HttpStatus.OK);
+                QueryResponse response = searchClient.search(q, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));//getLatestObservation(resourceUrl, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
+                responseEntity = new ResponseEntity<>(response, HttpStatus.OK);
 
-                } else if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Service) {
+                out = System.currentTimeMillis();
 
-                    String body = "[\n" +
-                            "  {\n" +
-                            "      \"inputParam1\" : \"on\"\n" +
-                            "  }\n" +
-                            "]";
-
-
-                    in = System.currentTimeMillis();
-                    String response = rapClient.invokeService(resourceUrl, body, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
-//                String response = rapClient.invokeService(resourceUrl, body, true, new HashSet<>(Collections.singletonList(homePlatformId)));
-//                String response = rapClient.invokeServiceAsGuest(resourceUrl, body, true);
-                    out = System.currentTimeMillis();
-
-                    responseEntity = new ResponseEntity(response, HttpStatus.OK);
-                }
             } catch (Throwable t) {
                 log.warn("Throwable", t);
                 responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -491,20 +489,20 @@ public class RAPClientForStressTest implements IStressTest {
             log.debug("["+this.name+"] finished with status " + responseEntity.getStatusCode() + " in "
                     + executionTime + " ms" );
 
-            return new RAPQueryHttpResult(this.name,responseEntity,executionTime);
+            return new SearchQueryHttpResult(this.name,responseEntity,executionTime);
         }
 
 
     }
 
 
-    private static class RAPQueryHttpResult {
+    private static class SearchQueryHttpResult {
 
         private String name;
         private final ResponseEntity responseEntity;
         private final long executionTime;
 
-        public RAPQueryHttpResult(String name, ResponseEntity responseEntity, long executionTime ) {
+        public SearchQueryHttpResult(String name, ResponseEntity responseEntity, long executionTime ) {
             this.name = name;
             this.responseEntity = responseEntity;
             this.executionTime = executionTime;
