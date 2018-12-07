@@ -4,6 +4,9 @@ import eu.h2020.symbiote.client.interfaces.IStressTest;
 import eu.h2020.symbiote.client.interfaces.RHClient;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.model.cim.*;
+import eu.h2020.symbiote.security.accesspolicies.common.AccessPolicyType;
+import eu.h2020.symbiote.security.accesspolicies.common.singletoken.SingleTokenAccessPolicySpecifier;
+import eu.h2020.symbiote.security.commons.exceptions.custom.InvalidArgumentsException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -80,20 +84,11 @@ public class RHClientForStressTest implements IStressTest {
 
         deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
 
-
-        //register and access resources periodically
-//        while(run<runsNumber) {
-//            sendRequestAndVerifyResponseRHStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName);
-//            try {
-//                Thread.sleep(60000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//            run++;
-//
-//          //  stress+=addNumber;
-//        }
-
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
 
         String fileNameStats = directoryName + (!testName.isEmpty() ? "/" + testName : "") + "/stats";
@@ -135,7 +130,13 @@ public class RHClientForStressTest implements IStressTest {
 
         outputFileStats.close();
 
+        try {
+            Thread.sleep(120000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
+        deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
 
 
     }
@@ -213,6 +214,12 @@ public class RHClientForStressTest implements IStressTest {
                     + maxTimer.orElse(-1l) + "\navg_ms " + avgTimer.orElse( -1.0));
             outputFile.close();
 
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
+            outputFileStats.append( formatter.format(in) + "\t" + in + "\t" + stress + "\t" + (100.00*(failures)/(double) stress) + "\t" + ( out - in ) + "\t" + minTimer.orElse(-1l) + "\t"
+                    + maxTimer.orElse(-1l) + "\t" + avgTimer.orElse( -1.0)+ "\n");
+
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
@@ -242,6 +249,13 @@ public class RHClientForStressTest implements IStressTest {
         public QueryHttpResult call() throws Exception {
             log.debug("["+this.name+"] starting");
 
+
+            CloudResource returnedResource = null;
+            long executionTime = 0;
+            ResponseEntity<CloudResource> responseEntity = new ResponseEntity(returnedResource, HttpStatus.OK);
+
+
+            try {
             RHClient rhClient = factory.getRHClient(homePlatformId);
 
             CloudResource cloudResource = new CloudResource();
@@ -255,13 +269,19 @@ public class RHClientForStressTest implements IStressTest {
             resource.setName(timeStamp + internalId);
             resource.setDescription(Collections.singletonList("outside air quality"));
             resource.setInterworkingServiceURL("https://intracom.symbiote-h2020.eu");
+
+                try {
+                    cloudResource.setAccessPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
+                    cloudResource.setFilteringPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
+                } catch (InvalidArgumentsException e) {
+                    e.printStackTrace();
+                }
+
+
             getRandomFields(cloudResource);
 
-            CloudResource returnedResource = null;
-            long executionTime = 0;
-            ResponseEntity<CloudResource> responseEntity = new ResponseEntity(returnedResource, HttpStatus.OK);
 
-            try {
+
             long in = System.currentTimeMillis();
 
 
@@ -444,7 +464,16 @@ public class RHClientForStressTest implements IStressTest {
             if (ids.isEmpty())
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
-            return new ResponseEntity(rhClient.deleteL1Resources(ids), HttpStatus.OK);
+            List<CloudResource> deletedResources = new ArrayList<>();
+            if(ids.size()>50)
+                for(int id=0; id<ids.size(); id+=50) {
+                   // List<String> idssublist = ids.subList(id, Math.min(id+19, ids.size()-1));
+                    deletedResources.addAll(rhClient.deleteL1Resources(ids.subList(id, Math.min(id+50, ids.size()))));
+                }
+                else
+                deletedResources.addAll(rhClient.deleteL1Resources(ids));
+
+            return new ResponseEntity(deletedResources, HttpStatus.OK);
         } else {
 
             ResponseEntity<List<CloudResource>> resources = new ResponseEntity<>(rhClient.getResources(), HttpStatus.OK);

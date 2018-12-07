@@ -198,6 +198,14 @@ public class RAPClientForStressTest implements IStressTest {
 
 
         outputFileStats.close();
+
+        try {
+            Thread.sleep(120000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
     }
 
     public static AbstractSymbIoTeClientFactory getClientFactory() {
@@ -427,7 +435,7 @@ public class RAPClientForStressTest implements IStressTest {
         public RAPQueryHttpResult call() throws Exception {
             log.debug("["+this.name+"] starting");
 
-            RAPClient rapClient = factory.getRapClient();
+
 
             int randomizer = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
 
@@ -441,6 +449,9 @@ public class RAPClientForStressTest implements IStressTest {
             long out=System.currentTimeMillis();
 
             try {
+
+                RAPClient rapClient = factory.getRapClient();
+
                 if (resourcesPerId.get(resourceIds.get(resourceId)).getResource() instanceof Sensor) {
                     in = System.currentTimeMillis();
                     Observation returnedObservation = rapClient.getLatestObservation(resourceUrl, authentication, new HashSet<>(Collections.singletonList(homePlatformId)));
@@ -541,7 +552,14 @@ public class RAPClientForStressTest implements IStressTest {
             if (ids.isEmpty())
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
-            return new ResponseEntity(rhClient.deleteL1Resources(ids), HttpStatus.OK);
+            List<CloudResource> deletedResources = new ArrayList<>();
+            if(ids.size()>50)
+                for(int id=0; id<ids.size(); id+=50)
+                    deletedResources.addAll(rhClient.deleteL1Resources(ids.subList(id, Math.min(id+50, ids.size()))));
+            else
+                deletedResources.addAll(rhClient.deleteL1Resources(ids));
+
+            return new ResponseEntity(deletedResources, HttpStatus.OK);
         } else {
 
             ResponseEntity<List<CloudResource>> resources = new ResponseEntity<>(rhClient.getResources(), HttpStatus.OK);

@@ -41,7 +41,7 @@ public class SearchClientForStressTest implements IStressTest {
     static List<CloudResource> resources = new ArrayList<>();
     static HashMap<String, CloudResource> resourcesPerId = new HashMap<>();
     static List<String> resourceIds = new ArrayList<>();
-    static ResourceUrlsResponse resourceUrlsResponse;
+   // static ResourceUrlsResponse resourceUrlsResponse;
     static Boolean authentication;
 
     static PrintWriter outputFileStats = null;
@@ -61,18 +61,18 @@ public class SearchClientForStressTest implements IStressTest {
         String keystorePassword = "testKeystore";
         String exampleHomePlatformIdentifier = "icom-platform";
 
-        String directoryName = "./output";
-
-        Boolean authentication = false;
-        String testName = "search_add5_repeat10" + authentication.toString();
-
-
         //set parameters for the stress test
         int runsNumber=10;//100;//number of execution runs for periodical execution
         int stress = 5;//1;////number of resources to access
         int addNumber = 5;//1;
         int experimentRounds = 10;//20; //repeat experiment for specific run 10 times
-        resourcesNumber=10;//number of resources to register
+        resourcesNumber=10000;//number of resources to register
+
+        String directoryName = "./output";
+
+        Boolean authentication = false;
+        String testName = "search_add5_repeat10_byname_registered_" + resourcesNumber + "_" + authentication.toString();
+
 
         int run=0;
         //register and access resources periodically
@@ -141,7 +141,24 @@ public class SearchClientForStressTest implements IStressTest {
 
         }
 
-        List <CloudResource> returnedResources = rhClient.addL1Resources(resources);
+      //  List <CloudResource> returnedResources = rhClient.addL1Resources(resources);
+
+        ////
+        List<CloudResource> returnedResources = new ArrayList<>();
+        if(resources.size()>50)
+            for(int id=0; id<resources.size(); id+=50) {
+                // List<String> idssublist = ids.subList(id, Math.min(id+19, ids.size()-1));
+                returnedResources.addAll(rhClient.addL1Resources(resources.subList(id, Math.min(id+50, resources.size()))));
+            }
+        else
+            returnedResources.addAll(rhClient.addL1Resources(resources));
+
+        ////
+
+
+
+
+
 
         for(CloudResource returnedResource: returnedResources) {
             resourceIds.add(returnedResource.getResource().getId());
@@ -155,8 +172,11 @@ public class SearchClientForStressTest implements IStressTest {
             e.printStackTrace();
         }
 
-        CRAMClient cramClient = factory.getCramClient();
-        resourceUrlsResponse = cramClient.getResourceUrl(new HashSet<> (resourceIds), true, new HashSet<>(Collections.singletonList(exampleHomePlatformIdentifier)));
+     //   CRAMClient cramClient = factory.getCramClient();
+     //   resourceUrlsResponse = cramClient.getResourceUrl(new HashSet<> (resourceIds), true, new HashSet<>(Collections.singletonList(exampleHomePlatformIdentifier)));
+
+
+
 
 
 
@@ -183,14 +203,6 @@ public class SearchClientForStressTest implements IStressTest {
 
         while(run<runsNumber) {
 
-
-
-
-
-
-
-
-
             for (int i=0; i<experimentRounds; i++) {
                 sendRequestAndVerifyResponseSearchStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
             }
@@ -206,6 +218,14 @@ public class SearchClientForStressTest implements IStressTest {
 
 
         outputFileStats.close();
+
+        try {
+            Thread.sleep(120000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
     }
 
     public static AbstractSymbIoTeClientFactory getClientFactory() {
@@ -435,42 +455,47 @@ public class SearchClientForStressTest implements IStressTest {
         public SearchQueryHttpResult call() throws Exception {
             log.debug("["+this.name+"] starting");
 
+            ResponseEntity<QueryResponse> responseEntity = new ResponseEntity(HttpStatus.OK);
+
+            long in = System.currentTimeMillis();
+            long out=System.currentTimeMillis();
+
+
+            try {
             SearchClient searchClient = factory.getSearchClient();
 
             CoreQueryRequest q = new CoreQueryRequest();
 
             //long randomizer = System.currentTimeMillis();
             int randomizer = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
-            q.setPlatform_id("homePlatformId");
-            if( randomizer%5==1 ) {
-                log.debug("Adding temperature to query and resource type stationarysensor");
-                q.setObserved_property(Arrays.asList("temperature"));
-                q.setDescription("temperature");
-                q.setResource_type("StationarySensor");
-            } else if ( randomizer%5==2) {
-                log.debug("Adding humidity to query");
-                q.setObserved_property(Arrays.asList("humidity"));
-                q.setShould_rank(Boolean.TRUE);
-            } else if (randomizer%5==3) {
-                log.debug("Adding resource_type Actuator");
-                q.setResource_type("Actuator");
-                q.setShould_rank(Boolean.FALSE);
-            } else if (randomizer%5==3) {
-                log.debug("Adding location name Paris and resource type StationarySensor");
-                q.setResource_type("StationarySensor");
-                q.setLocation_name("Paris");
-            } else {
-                log.debug("Adding resource_type Service");
-                q.setResource_type("Service");
-            }
 
 
-            ResponseEntity<QueryResponse> responseEntity = new ResponseEntity(HttpStatus.OK);
+            log.debug("Adding resource");
+            String id = resourceIds.get(randomizer%resourcesNumber);
+            q.setName(resourcesPerId.get(id).getResource().getName());//getInternalId());
+                //  q.setPlatform_id(homePlatformId);
+//            if( randomizer%5==1 ) {
+//                log.debug("Adding temperature to query and resource type stationarysensor");
+//                q.setObserved_property(Arrays.asList("temperature"));
+//                q.setDescription("temperature");
+//                q.setResource_type("StationarySensor");
+//            } else if ( randomizer%5==2) {
+//                log.debug("Adding humidity to query");
+//                q.setObserved_property(Arrays.asList("humidity"));
+//                q.setShould_rank(Boolean.TRUE);
+//            } else if (randomizer%5==3) {
+//                log.debug("Adding resource_type Actuator");
+//                q.setResource_type("Actuator");
+//                q.setShould_rank(Boolean.FALSE);
+//            } else if (randomizer%5==3) {
+//                log.debug("Adding location name Paris and resource type StationarySensor");
+//                q.setResource_type("StationarySensor");
+//                q.setLocation_name("Paris");
+//            } else {
+//                log.debug("Adding resource_type Service");
+//                q.setResource_type("Service");
+//            }
 
-            long in = System.currentTimeMillis();
-            long out=System.currentTimeMillis();
-
-            try {
 
                 in = System.currentTimeMillis();
 
@@ -539,7 +564,15 @@ public class SearchClientForStressTest implements IStressTest {
             if (ids.isEmpty())
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
-            return new ResponseEntity(rhClient.deleteL1Resources(ids), HttpStatus.OK);
+            List<CloudResource> deletedResources = new ArrayList<>();
+            if(ids.size()>50)
+            for(int id=0; id<ids.size(); id+=50)
+                deletedResources.addAll(rhClient.deleteL1Resources(ids.subList(id, Math.min(id+50, ids.size()))));
+            else
+                deletedResources.addAll(rhClient.deleteL1Resources(ids));
+
+            return new ResponseEntity(deletedResources, HttpStatus.OK);
+
         } else {
 
             ResponseEntity<List<CloudResource>> resources = new ResponseEntity<>(rhClient.getResources(), HttpStatus.OK);
