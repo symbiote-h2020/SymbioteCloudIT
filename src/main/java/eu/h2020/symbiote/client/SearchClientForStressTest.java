@@ -70,8 +70,8 @@ public class SearchClientForStressTest implements IStressTest {
 
         String directoryName = "./output";
 
-        Boolean authentication = false;
-        String testName = "search_add5_repeat10_byname_registered_" + resourcesNumber + "_" + authentication.toString();
+        Boolean authentication = true;
+        String testName = "search_add5_repeat10_byclient_byname_registered_" + resourcesNumber + "_" + authentication.toString();
 
 
         int run=0;
@@ -82,6 +82,8 @@ public class SearchClientForStressTest implements IStressTest {
         Config config = new Config(coreAddress, keystorePath, keystorePassword, type);
 
         // Get the factory
+
+       // AbstractSymbIoTeClientFactory factory;
         try {
             factory = getFactory(config);
             Set<HomePlatformCredentials> platformCredentials = new HashSet<>();
@@ -204,7 +206,7 @@ public class SearchClientForStressTest implements IStressTest {
         while(run<runsNumber) {
 
             for (int i=0; i<experimentRounds; i++) {
-                sendRequestAndVerifyResponseSearchStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, factory, authentication);
+                sendRequestAndVerifyResponseSearchStress(exampleHomePlatformIdentifier, run, stress, directoryName, testName, config, authentication);
             }
             run++;
 
@@ -228,14 +230,14 @@ public class SearchClientForStressTest implements IStressTest {
         deleteAllResources(Layer.L1, exampleHomePlatformIdentifier);
     }
 
-    public static AbstractSymbIoTeClientFactory getClientFactory() {
-        return factory;
-    }
+//    public static AbstractSymbIoTeClientFactory getClientFactory() {
+//        return factory;
+//    }
 
 
 
     public static ResponseEntity<?> sendRequestAndVerifyResponseSearchStress(String homePlatformId, Integer run, Integer stress,
-                                                                          String directoryName, String testName, AbstractSymbIoTeClientFactory factory, Boolean authentication) {
+                                                                          String directoryName, String testName, Config config, Boolean authentication) {
 
 
 
@@ -244,7 +246,7 @@ public class SearchClientForStressTest implements IStressTest {
 
         //populate tasks list
         for( int i = 0; i < stress; i++ ) {
-            tasks.add(new SearchQueryCallable("Runner "+run+ "_" +i, homePlatformId, authentication, factory));
+            tasks.add(new SearchQueryCallable("Runner "+run+ "_" +i, homePlatformId, authentication, config));
         }
 
         ExecutorService executorService = Executors.newFixedThreadPool(stress);
@@ -439,14 +441,14 @@ public class SearchClientForStressTest implements IStressTest {
     private static class SearchQueryCallable implements Callable<SearchQueryHttpResult> {
 
         private final String name;
-        private final AbstractSymbIoTeClientFactory factory;
+        private final Config config;
         private final String homePlatformId;
         private final boolean authentication;
 
 
-        public SearchQueryCallable(String name, String homePlatformId, boolean authentication, AbstractSymbIoTeClientFactory factory) {
+        public SearchQueryCallable(String name, String homePlatformId, boolean authentication, Config config) {
             this.name = name;
-            this.factory =  factory;
+            this.config =  config;
             this.homePlatformId = homePlatformId;
             this.authentication = authentication;
         }
@@ -462,7 +464,27 @@ public class SearchClientForStressTest implements IStressTest {
 
 
             try {
-            SearchClient searchClient = factory.getSearchClient();
+
+                AbstractSymbIoTeClientFactory factoryCalable;
+
+                factoryCalable = getFactory(config);
+                    Set<HomePlatformCredentials> platformCredentials = new HashSet<>();
+
+                    // example credentials
+                    String username = "user";
+                    String password = "user";
+                    String clientId = this.name;//"iliaClient";
+                    HomePlatformCredentials callableHomePlatformCredentials = new HomePlatformCredentials(
+                            homePlatformId,
+                            username,
+                            password,
+                            clientId);
+                    platformCredentials.add(callableHomePlatformCredentials);
+
+                    // Get Certificates for the specified platforms
+                factoryCalable.initializeInHomePlatforms(platformCredentials);
+
+            SearchClient searchClient = factoryCalable.getSearchClient();
 
             CoreQueryRequest q = new CoreQueryRequest();
 
