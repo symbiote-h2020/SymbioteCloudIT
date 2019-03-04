@@ -1,21 +1,12 @@
 package eu.h2020.symbiote.client.l1;
 
 import eu.h2020.symbiote.client.ClientFixture;
-import eu.h2020.symbiote.client.LambdaCondition;
 import eu.h2020.symbiote.client.SymbioteCloudITApplication;
 import eu.h2020.symbiote.cloud.model.internal.CloudResource;
 import eu.h2020.symbiote.core.ci.QueryResponse;
 import eu.h2020.symbiote.core.internal.CoreQueryRequest;
-import eu.h2020.symbiote.security.commons.enums.AccountStatus;
-import eu.h2020.symbiote.security.commons.enums.OperationType;
-import eu.h2020.symbiote.security.commons.enums.UserRole;
-import eu.h2020.symbiote.security.commons.exceptions.custom.AAMException;
-import eu.h2020.symbiote.security.communication.payloads.Credentials;
-import eu.h2020.symbiote.security.communication.payloads.UserDetails;
-import eu.h2020.symbiote.security.communication.payloads.UserManagementRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -26,8 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -69,7 +58,6 @@ public class RH_IntegrationTests extends ClientFixture {
 		log.info("JUnit: END TEST {}", new RuntimeException().getStackTrace()[0]);
 	}
 
-	@Ignore
 	@Test
 	public void testSyncResources() {
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);

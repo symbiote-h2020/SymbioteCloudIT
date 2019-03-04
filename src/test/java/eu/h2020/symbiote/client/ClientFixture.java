@@ -89,6 +89,9 @@ public class ClientFixture {
     @Value("${demoApp.password}")
     protected String password;
 
+	@Value("${plugin.id}")
+	protected String pluginId;
+
 	protected String defaultResourceIdPrefix;
 
     protected void clearRegistrationHandlerL1() {
@@ -126,7 +129,7 @@ public class ClientFixture {
 	protected CloudResource createSensorResource(String timeStamp, String internalId) {
 	    CloudResource cloudResource = new CloudResource();
 	    cloudResource.setInternalId(internalId);
-	    cloudResource.setPluginId("platform_01");
+	    cloudResource.setPluginId(pluginId);
 	
 	    try {
 			cloudResource.setAccessPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
@@ -161,7 +164,7 @@ public class ClientFixture {
 	protected CloudResource createActuatorResource(String timestamp, String internalId) {
 	    CloudResource cloudResource = new CloudResource();
 	    cloudResource.setInternalId(internalId);
-	    cloudResource.setPluginId("platform_01");
+	    cloudResource.setPluginId(pluginId);
 	    
 	    try {
 			cloudResource.setAccessPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));
@@ -199,7 +202,7 @@ public class ClientFixture {
 	protected CloudResource createServiceResource(String timestamp, String internalId) {
 	    CloudResource cloudResource = new CloudResource();
 	    cloudResource.setInternalId(internalId);
-	    cloudResource.setPluginId("platform_01");
+	    cloudResource.setPluginId(pluginId);
 	    
 	    try {
 			cloudResource.setAccessPolicy(new SingleTokenAccessPolicySpecifier(AccessPolicyType.PUBLIC, null));

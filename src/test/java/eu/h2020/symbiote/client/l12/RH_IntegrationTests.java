@@ -47,7 +47,7 @@ public class RH_IntegrationTests extends ClientFixture {
 	}
 
 	@Test
-	public void registerL1shareToFederation() {
+	public void registerL1shareToFederation() throws InterruptedException {
 		//register and then share resource
 		log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
@@ -62,6 +62,8 @@ public class RH_IntegrationTests extends ClientFixture {
         assertNotNull(result.get(fedId).get(0).getFederationInfo().getAggregationId());
         assertTrue(result.get(fedId).get(0).getFederationInfo().getSharingInformation().containsKey(fedId));
         assertNotNull(result.get(fedId).get(0).getFederationInfo().getSharingInformation().get(fedId).getSymbioteId());
+
+        TimeUnit.SECONDS.sleep(2);
 
         // Search in Core
         String name = result.get(fedId).get(0).getResource().getName();
@@ -124,7 +126,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test
-    public void registerL2registerL1getL2getL1() {  //register L2 then L1. Get observations for L2 and L1.
+    public void registerL2registerL1getL2getL1() throws InterruptedException {  //register L2 then L1. Get observations for L2 and L1.
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
         LinkedList<CloudResource> resourcesL1 = new LinkedList<>();
@@ -165,6 +167,8 @@ public class RH_IntegrationTests extends ClientFixture {
         assertThat(returnedResourceL1.getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
         assertThat(returnedResourceL1.getResource().getId()).isNotNull();
 
+        TimeUnit.SECONDS.sleep(2);
+
         //get resource name
         String name=defaultSensorResource.getResource().getName();
 
@@ -192,7 +196,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test
-    public void registerL1registerL2getL1getL2() {//register L1 then L2. Get observations for L1 and L2.
+    public void registerL1registerL2getL1getL2() throws InterruptedException {//register L1 then L2. Get observations for L1 and L2.
 
 	    log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
@@ -235,6 +239,8 @@ public class RH_IntegrationTests extends ClientFixture {
         assertNotNull(returnedResource.getFederationInfo());
         assertNotNull(returnedResource.getFederationInfo().getAggregationId());
 
+        TimeUnit.SECONDS.sleep(2);
+
         //get resource name
         String name=defaultSensorResource.getResource().getName();
 
@@ -263,7 +269,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
 
     @Test
-    public void registerL2registerL1deleteL2getL1() {  //register L2 then L1. Get observations for L2 and L1.
+    public void registerL2registerL1deleteL2getL1() throws InterruptedException {  //register L2 then L1. Get observations for L2 and L1.
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
         LinkedList<CloudResource> resourcesL1 = new LinkedList<>();
@@ -313,6 +319,7 @@ public class RH_IntegrationTests extends ClientFixture {
 
         //rhClient.removeL2Resources(ids);
 
+        TimeUnit.SECONDS.sleep(2);
 
         //get observations for L1: Search in Core and get Url for L1
         ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
@@ -328,7 +335,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test
-    public void registerL1registerL2deleteL1getL2() {//register L1 then L2. Get observations for L1 and L2.
+    public void registerL1registerL2deleteL1getL2() throws InterruptedException{//register L1 then L2. Get observations for L1 and L2.
 
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
@@ -375,6 +382,8 @@ public class RH_IntegrationTests extends ClientFixture {
         //get resource name
         String name=defaultSensorResource.getResource().getName();
 
+        TimeUnit.SECONDS.sleep(2);
+
         // Delete from L1
         ResponseEntity<List<CloudResource>> responseL1 = deleteAllL1Resources();
         assertThat(responseL1.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -394,7 +403,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test(expected = FeignException.class)
-    public void registerL2registerL1deleteL1getL1() {//register L2 then L1. delete L2, get L2 should fail.
+    public void registerL2registerL1deleteL1getL1() throws InterruptedException {//register L2 then L1. delete L2, get L2 should fail.
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
         LinkedList<CloudResource> resourcesL1 = new LinkedList<>();
@@ -434,6 +443,8 @@ public class RH_IntegrationTests extends ClientFixture {
         CloudResource returnedResourceL1 = responseEntityL1.getBody().get(0);
         assertThat(returnedResourceL1.getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
         assertThat(returnedResourceL1.getResource().getId()).isNotNull();
+
+        TimeUnit.SECONDS.sleep(2);
 
         //search in core for L1
         String name=defaultSensorResource.getResource().getName();
@@ -455,7 +466,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test(expected = FeignException.class)
-    public void registerL2registerL1deleteL2getL2() {//register L2 then L1. delete L2, get L2 should fail.
+    public void registerL2registerL1deleteL2getL2() throws InterruptedException {//register L2 then L1. delete L2, get L2 should fail.
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
         LinkedList<CloudResource> resourcesL1 = new LinkedList<>();
@@ -495,6 +506,8 @@ public class RH_IntegrationTests extends ClientFixture {
         CloudResource returnedResourceL1 = responseEntityL1.getBody().get(0);
         assertThat(returnedResourceL1.getInternalId()).isEqualTo(defaultSensorResource.getInternalId());
         assertThat(returnedResourceL1.getResource().getId()).isNotNull();
+
+        TimeUnit.SECONDS.sleep(2);
 
         //search in PR for L2 and get url
         String name=defaultSensorResource.getResource().getName();
@@ -517,7 +530,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test
-    public void registerL1shareToFederationDeleteL1() {
+    public void registerL1shareToFederationDeleteL1() throws InterruptedException {
         //register and then share resource
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
@@ -525,6 +538,8 @@ public class RH_IntegrationTests extends ClientFixture {
         boolean bartering = true;
 
         registerL1TestSensorAndShareToFederation(fedId, bartering);
+
+        TimeUnit.SECONDS.sleep(2);
 
         // Delete from L1
         ResponseEntity<List<CloudResource>> responseEntity = deleteAllL1Resources();
@@ -540,6 +555,8 @@ public class RH_IntegrationTests extends ClientFixture {
         assertNotNull(result.get(0).getFederationInfo().getAggregationId());
         assertTrue(result.get(0).getFederationInfo().getSharingInformation().containsKey(fedId));
         assertNotNull(result.get(0).getFederationInfo().getSharingInformation().get(fedId).getSymbioteId());
+
+        TimeUnit.SECONDS.sleep(2);
 
         // Search in Core
         String name = result.get(0).getResource().getName();
@@ -600,7 +617,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test
-    public void registerL1shareToFederationDeleteL1DeleteL2() {
+    public void registerL1shareToFederationDeleteL1DeleteL2() throws InterruptedException {
         //register and then share resource
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
@@ -612,6 +629,8 @@ public class RH_IntegrationTests extends ClientFixture {
         ResponseEntity<List<CloudResource>> responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         String name = responseEntity.getBody().get(0).getResource().getName();
+
+        TimeUnit.SECONDS.sleep(2);
 
         // Delete from L1
         responseEntity = deleteAllL1Resources();
@@ -627,6 +646,8 @@ public class RH_IntegrationTests extends ClientFixture {
 
         List<CloudResource> result = responseEntity.getBody();
         assertEquals(0, result.size());
+
+        TimeUnit.SECONDS.sleep(2);
 
         // Search in Core
         ResponseEntity<QueryResponse> queryL1 = searchL1Resources(
@@ -645,7 +666,7 @@ public class RH_IntegrationTests extends ClientFixture {
     }
 
     @Test
-    public void registerL1shareToFederationDeleteL2DeleteL1() {
+    public void registerL1shareToFederationDeleteL2DeleteL1() throws InterruptedException {
         //register and then share resource
         log.info("JUnit: START TEST {}", new RuntimeException().getStackTrace()[0]);
 
@@ -657,6 +678,8 @@ public class RH_IntegrationTests extends ClientFixture {
         ResponseEntity<List<CloudResource>> responseEntity = getResources();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         String name = responseEntity.getBody().get(0).getResource().getName();
+
+        TimeUnit.SECONDS.sleep(2);
 
         // Delete from L2
         responseEntity = deleteAllL2Resources();

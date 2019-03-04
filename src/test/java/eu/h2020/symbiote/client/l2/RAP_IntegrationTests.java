@@ -432,8 +432,9 @@ public class RAP_IntegrationTests extends ClientFixture {
 
 		// Register a resource in icom-platform and try to access it with mobaas4
 		LinkedList<CloudResource> resources = new LinkedList<>();
-		String fedId1="fed1";
-		String fedId2="fed2";
+		String fedId1 = "nassist-cedint-bt-federation";
+		String fedId2 = "fed2";
+		String platformId = "nassist-symbiote";
 
 		CloudResource defaultSensorResource = createSensorResource("", "isen1");
 
@@ -462,11 +463,11 @@ public class RAP_IntegrationTests extends ClientFixture {
 		String url=query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
         AbstractSymbIoTeClientFactory.HomePlatformCredentials homePlatformCredentials =
-                new AbstractSymbIoTeClientFactory.HomePlatformCredentials("mobaas4", username, password, clientId);
+                new AbstractSymbIoTeClientFactory.HomePlatformCredentials(platformId, username, password, clientId);
         abstractSymbIoTeClientFactory.initializeInHomePlatforms(new HashSet<>(Collections.singletonList(homePlatformCredentials)));
 
         TimeUnit.SECONDS.sleep(3);
-		Observation response = rapClient.getLatestObservation(url, true, new HashSet<>(Collections.singletonList("mobaas4")));
+		Observation response = rapClient.getLatestObservation(url, true, new HashSet<>(Collections.singletonList(platformId)));
 
 		assertThat(response.getResourceId()).isEqualTo(resourceId);
 
@@ -475,15 +476,19 @@ public class RAP_IntegrationTests extends ClientFixture {
     @Test
     public void testGetSensorObservationBarteringInverse() throws InterruptedException {
 
-        // Register a resource in mobaas4 and try to access it with icom-platform
-        RHClient mobaasRHClient = abstractSymbIoTeClientFactory.getRHClient("mobaas4");
-        mobaasRHClient.removeL2Resources(Collections.singletonList("isen1"));
+        String federatedPlatformId = "nassist-symbiote";
+        String iiUrlFederatedPlatform = "https://symbiote.encontrol.io";
+
+        // Register a resource in the federated platform and try to access it with icom-platform
+        RHClient federatedRHClient = abstractSymbIoTeClientFactory.getRHClient(federatedPlatformId);
+        federatedRHClient.removeL2Resources(Collections.singletonList("isen1"));
+
 
         LinkedList<CloudResource> resources = new LinkedList<>();
-        String fedId1="fed1";
+        String fedId1 = "nassist-cedint-bt-federation";
         String fedId2="fed2";
 
-        CloudResource defaultSensorResource = createSensorResource("mobaas4-", "isen1");
+        CloudResource defaultSensorResource = createSensorResource(federatedPlatformId + "-", "isen1");
 
         Map<String, ResourceSharingInformation> resourceSharingInformationMapSensor = new HashMap<>();
         ResourceSharingInformation sharingInformationSensor1 = new ResourceSharingInformation();
@@ -496,24 +501,24 @@ public class RAP_IntegrationTests extends ClientFixture {
         federationInfoBeanSensor.setSharingInformation(resourceSharingInformationMapSensor);
 
         defaultSensorResource.setFederationInfo(federationInfoBeanSensor);
-        defaultSensorResource.getResource().setInterworkingServiceURL("https://symbiote-test.ubiwhere.com:443");
+        defaultSensorResource.getResource().setInterworkingServiceURL(iiUrlFederatedPlatform);
         resources.add(defaultSensorResource);
 
-        mobaasRHClient.addL2Resources(resources);
+        federatedRHClient.addL2Resources(resources);
 
         //get url
         TimeUnit.SECONDS.sleep(3);
         String name = resources.get(0).getResource().getName();
         ResponseEntity<FederationSearchResult> query = searchL2Resources(
-                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton(name))).build()
+                new PlatformRegistryQuery.Builder().names(new ArrayList<>(Collections.singleton("NO2"))).build()
         );
 
         String resourceId = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getSymbioteId();
         String url = query.getBody().getResources().get(0).getFederatedResourceInfoMap().get(fedId1).getoDataUrl();
 
-        Observation response = rapClient.getLatestObservation(url, true, new HashSet<>(Collections.singletonList(platformId)));
+        Observation response = rapClient.getLatestObservation("https://symbiote.encontrol.io/rap/Sensors('2da81c02ba4741f3@nassist-symbiote@nassist-cedint-bt-federation')", true, new HashSet<>(Collections.singletonList(platformId)));
 
-        mobaasRHClient.removeL2Resources(Collections.singletonList("isen1"));
+        federatedRHClient.removeL2Resources(Collections.singletonList("isen1"));
         assertThat(response.getResourceId()).isEqualTo(resourceId);
 
     }
